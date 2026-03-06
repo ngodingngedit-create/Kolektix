@@ -934,7 +934,7 @@ export default function Invoice() {
                   </Table>
                 </Box>
 
-                {/* Summary Card dengan Biaya Kurir */}
+                {/* Summary Card dengan Biya Kurir */}
                 <Card withBorder mt="md" bg="gray.0">
                   <Stack gap="xs">
                     <Flex justify="space-between">
