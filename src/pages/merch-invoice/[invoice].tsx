@@ -547,6 +547,7 @@ export default function Invoice() {
             setData(data);
             console.log("📋 Invoice Data:", data);
             console.log("📋 Detail items:", data.detail);
+            console.log("🚚 Courier Data:", data.courier); // Log data kurir
           }
         },
         complete: () => setLoading.filter((e) => e != "getdata"),
@@ -615,6 +616,15 @@ export default function Invoice() {
     return DEFAULT_ADMIN_FEE;
   };
 
+  // Hitung biaya kurir
+  const courierPrice = useMemo(() => {
+    if (data?.courier?.price) {
+      const price = parseInt(data.courier.price);
+      return isNaN(price) ? 0 : price;
+    }
+    return 0;
+  }, [data]);
+
   // Hitung total harga produk
   const totalProductPrice = useMemo(() => {
     const total = data?.detail.reduce((total, item) => {
@@ -637,10 +647,10 @@ export default function Invoice() {
     return total;
   }, [data, products]);
 
-  // Grand total = total produk + total admin fee
+  // Grand total = total produk + total admin fee + biaya kurir
   const grandTotal = useMemo(() => {
-    return totalProductPrice + totalAdminFee;
-  }, [totalProductPrice, totalAdminFee]);
+    return totalProductPrice + totalAdminFee + courierPrice;
+  }, [totalProductPrice, totalAdminFee, courierPrice]);
 
   // Dapatkan daftar produk yang kena fallback
   const fallbackProductsList = useMemo(() => {
@@ -924,7 +934,7 @@ export default function Invoice() {
                   </Table>
                 </Box>
 
-                {/* Summary Card */}
+                {/* Summary Card dengan Biaya Kurir */}
                 <Card withBorder mt="md" bg="gray.0">
                   <Stack gap="xs">
                     <Flex justify="space-between">
@@ -937,6 +947,12 @@ export default function Invoice() {
                       <Text fw={500}>Total Admin Fee:</Text>
                       <Text fw={500}>
                         <NumberFormatter value={totalAdminFee} thousandSeparator="." decimalSeparator="," />
+                      </Text>
+                    </Flex>
+                    <Flex justify="space-between">
+                      <Text fw={500}>Biaya Pengiriman ({data?.courier?.main || "-"} - {data?.courier?.type || "-"}):</Text>
+                      <Text fw={500}>
+                        <NumberFormatter value={courierPrice} thousandSeparator="." decimalSeparator="," />
                       </Text>
                     </Flex>
                     <Divider my="xs" />

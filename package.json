@@ -31,6 +31,7 @@
     "@mui/material": "^6.1.4",
     "@mui/x-date-pickers": "^7.20.0",
     "@nextui-org/react": "^2.4.2",
+    "@react-google-maps/api": "^2.20.8",
     "@react-stately/data": "^3.11.4",
     "@types/js-cookie": "^3.0.6",
     "@types/react-slick": "^0.23.13",
