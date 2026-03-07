@@ -4608,15 +4608,6 @@ export default function Cart() {
                             clearable
                             nothingFoundMessage="Tidak ada kurir tersedia"
                           />
-
-                          {form.values.courier && (
-                            <Card withBorder p="sm" bg="green.0" mt="sm">
-                              <Text size="sm" fw={500}>Kurir dipilih:</Text>
-                              <Text size="sm">{form.values.courier.name || '-'} - {form.values.courier.service || '-'}</Text>
-                              <Text size="sm">Estimasi: {form.values.courier.etd || '-'}</Text>
-                              <Text size="sm" fw={600}>Biaya: {currencyFormat(form.values.courier.price || 0)}</Text>
-                            </Card>
-                          )}
                         </>
                       ) : (
                         <Card withBorder p="sm" bg="yellow.0">
