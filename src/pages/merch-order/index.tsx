@@ -4038,6 +4038,7 @@ export default function Cart() {
     });
   };
 
+  // Function to check all ongkir options - HANYA MENAMPILKAN REGULAR
   const checkAllOngkir = async () => {
     if (!form.values.receiver?.latitude || 
         !form.values.receiver?.longitude || 
@@ -4074,6 +4075,7 @@ export default function Cart() {
             return;
           }
           
+          // Format dropdown options - HANYA REGULAR
           const options: { group: string; items: CourierRate[] }[] = [];
           
           const processRateItems = (items: any[] | undefined, groupName: string): CourierRate[] => {
@@ -4091,26 +4093,7 @@ export default function Cart() {
               .filter(item => item.price > 0);
           };
           
-          if (rates.instant && Array.isArray(rates.instant) && rates.instant.length > 0) {
-            const instantItems = processRateItems(rates.instant, "Instant");
-            if (instantItems.length > 0) {
-              options.push({
-                group: "Instant",
-                items: instantItems
-              });
-            }
-          }
-          
-          if (rates.same_day && Array.isArray(rates.same_day) && rates.same_day.length > 0) {
-            const sameDayItems = processRateItems(rates.same_day, "Same Day");
-            if (sameDayItems.length > 0) {
-              options.push({
-                group: "Same Day",
-                items: sameDayItems
-              });
-            }
-          }
-          
+          // HANYA PROSES REGULAR, instant dan same_day diabaikan
           if (rates.regular && Array.isArray(rates.regular) && rates.regular.length > 0) {
             const regularItems = processRateItems(rates.regular, "Regular");
             if (regularItems.length > 0) {
@@ -4121,7 +4104,7 @@ export default function Cart() {
             }
           }
           
-          console.log("Formatted courier options:", options);
+          console.log("Formatted courier options (regular only):", options);
           setCourierOptions(options);
         } else {
           console.error("Failed to fetch ongkir or success false:", responseData);
@@ -4196,221 +4179,220 @@ export default function Cart() {
   };
 
   const handleCheckout = async () => {
-  const { values } = form;
+    const { values } = form;
 
-  if (pickupDeliveryInfo.is_pickup_instore === 1) {
-    if (!values.nama_pemesan) {
-      form.setFieldError("nama_pemesan", "Nama pemesan harus diisi untuk pickup instore");
+    if (pickupDeliveryInfo.is_pickup_instore === 1) {
+      if (!values.nama_pemesan) {
+        form.setFieldError("nama_pemesan", "Nama pemesan harus diisi untuk pickup instore");
+        return;
+      }
+      if (!values.email_pemesan) {
+        form.setFieldError("email_pemesan", "Email pemesan harus diisi untuk pickup instore");
+        return;
+      }
+      if (!values.phone_pemesan) {
+        form.setFieldError("phone_pemesan", "Nomor telepon pemesan harus diisi untuk pickup instore");
+        return;
+      }
+      if (!values.pickup_location?.store_location_id) {
+        form.setFieldError("pickup_location", "Lokasi pengambilan harus dipilih untuk pickup instore");
+        return;
+      }
+    }
+
+    if (pickupDeliveryInfo.is_delivery === 1) {
+      if (!values.receiver) {
+        form.setFieldError("receiver", "Alamat pengiriman harus diisi untuk delivery");
+        return;
+      }
+      if (!values.courier) {
+        form.setFieldError("courier", "Kurir harus dipilih untuk delivery");
+        return;
+      }
+    }
+
+    if (!values.payment_method_id) {
+      form.setFieldError("payment_method_id", "Payment method ID harus diisi");
       return;
     }
-    if (!values.email_pemesan) {
-      form.setFieldError("email_pemesan", "Email pemesan harus diisi untuk pickup instore");
+
+    if (!orderedProduct || orderedProduct.length === 0) {
+      console.error("Tidak ada produk dalam order");
       return;
     }
-    if (!values.phone_pemesan) {
-      form.setFieldError("phone_pemesan", "Nomor telepon pemesan harus diisi untuk pickup instore");
-      return;
-    }
-    if (!values.pickup_location?.store_location_id) {
-      form.setFieldError("pickup_location", "Lokasi pengambilan harus dipilih untuk pickup instore");
-      return;
-    }
-  }
 
-  if (pickupDeliveryInfo.is_delivery === 1) {
-    if (!values.receiver) {
-      form.setFieldError("receiver", "Alamat pengiriman harus diisi untuk delivery");
-      return;
-    }
-    if (!values.courier) {
-      form.setFieldError("courier", "Kurir harus dipilih untuk delivery");
-      return;
-    }
-  }
+    const formattedPhone = values.phone_pemesan ? values.phone_pemesan.replace(/\D/g, "") : undefined;
+    const userId = user?.id ?? 6;
+    const paymentMethodId = values.payment_method_id || 4;
 
-  if (!values.payment_method_id) {
-    form.setFieldError("payment_method_id", "Payment method ID harus diisi");
-    return;
-  }
-
-  if (!orderedProduct || orderedProduct.length === 0) {
-    console.error("Tidak ada produk dalam order");
-    return;
-  }
-
-  const formattedPhone = values.phone_pemesan ? values.phone_pemesan.replace(/\D/g, "") : undefined;
-  const userId = user?.id ?? 6;
-  const paymentMethodId = values.payment_method_id || 4;
-
-  const checkoutData: Checkout = {
-    user_id: userId,
-    nama_pemesan: pickupDeliveryInfo.is_pickup_instore === 1 ? values.nama_pemesan || null : null,
-    email_pemesan: pickupDeliveryInfo.is_pickup_instore === 1 ? values.email_pemesan || null : null,
-    phone_pemesan: pickupDeliveryInfo.is_pickup_instore === 1 ? formattedPhone || null : null,
-    creator_id: orderedProduct && orderedProduct.length > 0 ? orderedProduct[0].creator_id || null : null,
-    grandtotal: orderSummary.grandtotal,
-    product: (orderedProduct ?? []).map((e, index) => ({
-      product_id: e.product_id,
-      variant_id: e.variant_id || null,
-      qty: e.qty,
-      price: e.subprice,
-      order_notes: values.product_notes?.[index] || "",
-    })),
-    payment_method: "xendit",
-    payment_method_id: paymentMethodId,
-    is_pickup_instore: pickupDeliveryInfo.is_pickup_instore,
-    is_delivery: pickupDeliveryInfo.is_delivery,
-  };
-
-  if (pickupDeliveryInfo.is_pickup_instore === 1 && values.pickup_location) {
-    checkoutData.order_pickup = {
-      store_location_id: values.pickup_location.store_location_id,
-    };
-  }
-
-  if (pickupDeliveryInfo.is_delivery === 1 && values.receiver && values.courier) {
-    checkoutData.courier = {
-      main: values.courier.name ? values.courier.name.toUpperCase() : "JNE",
-      type: values.courier.type || "standard",
-      price: values.courier.price || 0,
-      service: values.courier.service || "Reguler",
-      etd: values.courier.etd || "1-2 days",
+    const checkoutData: Checkout = {
+      user_id: userId,
+      nama_pemesan: pickupDeliveryInfo.is_pickup_instore === 1 ? values.nama_pemesan || null : null,
+      email_pemesan: pickupDeliveryInfo.is_pickup_instore === 1 ? values.email_pemesan || null : null,
+      phone_pemesan: pickupDeliveryInfo.is_pickup_instore === 1 ? formattedPhone || null : null,
+      creator_id: orderedProduct && orderedProduct.length > 0 ? orderedProduct[0].creator_id || null : null,
+      grandtotal: orderSummary.grandtotal,
+      product: (orderedProduct ?? []).map((e, index) => ({
+        product_id: e.product_id,
+        variant_id: e.variant_id || null,
+        qty: e.qty,
+        price: e.subprice,
+        order_notes: values.product_notes?.[index] || "",
+      })),
+      payment_method: "xendit",
+      payment_method_id: paymentMethodId,
+      is_pickup_instore: pickupDeliveryInfo.is_pickup_instore,
+      is_delivery: pickupDeliveryInfo.is_delivery,
     };
 
-    checkoutData.address = {
-      id: values.receiver.id,
-      is_main_address: 1,
-      province_id: values.receiver.province_id,
-      city_id: values.receiver.city_id,
-      address_detail: values.receiver.detail,
-      address_name: values.receiver.address_name,
-      zipcode: String(values.receiver.pos_code),
-      latitude: values.receiver.latitude || "",
-      longitude: values.receiver.longitude || "",
-      nama_penerima: values.receiver.name,
-      phone: values.receiver.phone,
-      is_active: 1,
-    };
-  } else {
-    checkoutData.courier = {
-      main: "JNE",
-      type: "standard",
-      price: 10000,
-      service: "Reguler",
-      etd: "1-2 days",
-    };
+    if (pickupDeliveryInfo.is_pickup_instore === 1 && values.pickup_location) {
+      checkoutData.order_pickup = {
+        store_location_id: values.pickup_location.store_location_id,
+      };
+    }
 
-    checkoutData.address = {
-      is_main_address: 1,
-      province_id: 11,
-      city_id: 22,
-      address_detail: "Ambil di Pasar Bareng Bareng",
-      address_name: "Pasar Bareng Bareng",
-      zipcode: "15147",
-      latitude: "",
-      longitude: "",
-      nama_penerima: values.nama_pemesan || "Customer",
-      phone: formattedPhone || "081234567890",
-      is_active: 1,
-    };
-  }
+    if (pickupDeliveryInfo.is_delivery === 1 && values.receiver && values.courier) {
+      checkoutData.courier = {
+        main: values.courier.name ? values.courier.name.toUpperCase() : "JNE",
+        type: values.courier.type || "standard",
+        price: values.courier.price || 0,
+        service: values.courier.service || "Reguler",
+        etd: values.courier.etd || "1-2 days",
+      };
 
-  try {
-    await fetch<any, any>({
-      url: "order-product",
-      method: "POST",
-      data: checkoutData,
-      before: () => setLoading.append("checkout"),
-      success: ({ data, status, message, error }) => {
-        console.log("Checkout success response:", data);
-        
-        // FIXED: Handle response structure based on actual API response
-        if (data?.xendit && Array.isArray(data.xendit) && data.xendit.length > 0) {
-          const xenditData = data.xendit[0];
-          if (xenditData.invoice_url) {
-            Cookies.remove("order_data");
-            router.push(xenditData.invoice_url);
-            return;
+      checkoutData.address = {
+        id: values.receiver.id,
+        is_main_address: 1,
+        province_id: values.receiver.province_id,
+        city_id: values.receiver.city_id,
+        address_detail: values.receiver.detail,
+        address_name: values.receiver.address_name,
+        zipcode: String(values.receiver.pos_code),
+        latitude: values.receiver.latitude || "",
+        longitude: values.receiver.longitude || "",
+        nama_penerima: values.receiver.name,
+        phone: values.receiver.phone,
+        is_active: 1,
+      };
+    } else {
+      checkoutData.courier = {
+        main: "JNE",
+        type: "standard",
+        price: 10000,
+        service: "Reguler",
+        etd: "1-2 days",
+      };
+
+      checkoutData.address = {
+        is_main_address: 1,
+        province_id: 11,
+        city_id: 22,
+        address_detail: "Ambil di Pasar Bareng Bareng",
+        address_name: "Pasar Bareng Bareng",
+        zipcode: "15147",
+        latitude: "",
+        longitude: "",
+        nama_penerima: values.nama_pemesan || "Customer",
+        phone: formattedPhone || "081234567890",
+        is_active: 1,
+      };
+    }
+
+    try {
+      await fetch<any, any>({
+        url: "order-product",
+        method: "POST",
+        data: checkoutData,
+        before: () => setLoading.append("checkout"),
+        success: ({ data, status, message, error }) => {
+          console.log("Checkout success response:", data);
+          
+          // Handle response structure based on actual API response
+          if (data?.xendit && Array.isArray(data.xendit) && data.xendit.length > 0) {
+            const xenditData = data.xendit[0];
+            if (xenditData.invoice_url) {
+              Cookies.remove("order_data");
+              router.push(xenditData.invoice_url);
+              return;
+            }
           }
-        }
-        
-        // Fallback untuk struktur lama
-        if (data?.xendit_invoice) {
-          Cookies.remove("order_data");
-          router.push(data.xendit_invoice);
-          return;
-        } else if (data?.xendit?.invoice_url) {
-          Cookies.remove("order_data");
-          router.push(data.xendit.invoice_url);
-          return;
-        } else {
-          // Handle error response
-          if (typeof message === "string" && message.includes("{")) {
-            try {
-              const parsedError = JSON.parse(message);
-              
-              if (parsedError.out_of_stock === true) {
-                setStockAlert({
-                  show: true,
-                  message: parsedError.message || "Stock produk tidak mencukupi. Silakan periksa kembali jumlah produk yang dipesan."
-                });
+          
+          // Fallback untuk struktur lama
+          if (data?.xendit_invoice) {
+            Cookies.remove("order_data");
+            router.push(data.xendit_invoice);
+            return;
+          } else if (data?.xendit?.invoice_url) {
+            Cookies.remove("order_data");
+            router.push(data.xendit.invoice_url);
+            return;
+          } else {
+            if (typeof message === "string" && message.includes("{")) {
+              try {
+                const parsedError = JSON.parse(message);
                 
-                notifications.show({
-                  title: 'Stock Tidak Tersedia',
-                  message: parsedError.message || 'Maaf, produk yang Anda pesan sudah habis atau stock tidak mencukupi.',
-                  color: 'red',
-                  icon: <Icon icon="mdi:alert-circle" />,
-                });
-              } else {
-                alert(`Gagal membuat transaksi: ${parsedError.message || parsedError.error || "Unknown error"}`);
+                if (parsedError.out_of_stock === true) {
+                  setStockAlert({
+                    show: true,
+                    message: parsedError.message || "Stock produk tidak mencukupi. Silakan periksa kembali jumlah produk yang dipesan."
+                  });
+                  
+                  notifications.show({
+                    title: 'Stock Tidak Tersedia',
+                    message: parsedError.message || 'Maaf, produk yang Anda pesan sudah habis atau stock tidak mencukupi.',
+                    color: 'red',
+                    icon: <Icon icon="mdi:alert-circle" />,
+                  });
+                } else {
+                  alert(`Gagal membuat transaksi: ${parsedError.message || parsedError.error || "Unknown error"}`);
+                }
+              } catch {
+                alert(`Gagal membuat transaksi: ${message || error || "Unknown error"}`);
               }
-            } catch {
+            } else {
               alert(`Gagal membuat transaksi: ${message || error || "Unknown error"}`);
             }
-          } else {
-            alert(`Gagal membuat transaksi: ${message || error || "Unknown error"}`);
           }
-        }
-      },
-      complete: () => setLoading.filter((e) => e != "checkout"),
-      error: (err) => {
-        console.error("Error checkout:", err);
-        
-        if (err?.response?.data?.out_of_stock === true || err?.out_of_stock === true) {
-          const errorMessage = err?.response?.data?.message || err?.message || "Stock produk tidak mencukupi. Silakan periksa kembali jumlah produk yang dipesan.";
+        },
+        complete: () => setLoading.filter((e) => e != "checkout"),
+        error: (err) => {
+          console.error("Error checkout:", err);
           
-          setStockAlert({
-            show: true,
-            message: errorMessage
-          });
-          
-          notifications.show({
-            title: 'Stock Tidak Tersedia',
-            message: errorMessage,
-            color: 'red',
-            icon: <Icon icon="mdi:alert-circle" />,
-          });
-        } else {
-          alert("Terjadi kesalahan saat memproses checkout. Silakan coba lagi.");
-        }
-      },
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-  } catch (error) {
-    console.error("Checkout error:", error);
-    
-    if (error && typeof error === 'object' && 'out_of_stock' in error && error.out_of_stock === true) {
-      setStockAlert({
-        show: true,
-        message: "Stock produk tidak mencukupi. Silakan periksa kembali jumlah produk yang dipesan."
+          if (err?.response?.data?.out_of_stock === true || err?.out_of_stock === true) {
+            const errorMessage = err?.response?.data?.message || err?.message || "Stock produk tidak mencukupi. Silakan periksa kembali jumlah produk yang dipesan.";
+            
+            setStockAlert({
+              show: true,
+              message: errorMessage
+            });
+            
+            notifications.show({
+              title: 'Stock Tidak Tersedia',
+              message: errorMessage,
+              color: 'red',
+              icon: <Icon icon="mdi:alert-circle" />,
+            });
+          } else {
+            alert("Terjadi kesalahan saat memproses checkout. Silakan coba lagi.");
+          }
+        },
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
-    } else {
-      alert("Terjadi kesalahan sistem. Silakan coba lagi.");
+    } catch (error) {
+      console.error("Checkout error:", error);
+      
+      if (error && typeof error === 'object' && 'out_of_stock' in error && error.out_of_stock === true) {
+        setStockAlert({
+          show: true,
+          message: "Stock produk tidak mencukupi. Silakan periksa kembali jumlah produk yang dipesan."
+        });
+      } else {
+        alert("Terjadi kesalahan sistem. Silakan coba lagi.");
+      }
     }
-  }
-};
+  };
 
   const getAccordionItems = () => {
     const items = [];
@@ -4571,7 +4553,7 @@ export default function Cart() {
                 </UnstyledButton>
               </div>
 
-              {/* Bagian Kurir Pengiriman dengan Dropdown - FIXED */}
+              {/* Bagian Kurir Pengiriman - HANYA REGULAR */}
               {form.values?.receiver?.pos_code && (
                 <div>
                   <Text size="sm" fw={500} mb={5}>
@@ -4593,27 +4575,17 @@ export default function Cart() {
                               try {
                                 if (!Array.isArray(courierOptions)) return [];
                                 
-                                return courierOptions.flatMap(group => {
-                                  if (!group || typeof group !== 'object') return [];
-                                  
-                                  const items = Array.isArray(group.items) ? group.items : [];
-                                  if (items.length === 0) return [];
-                                  
-                                  const groupHeader = { 
-                                    value: `__group_${group.group || 'unknown'}__`, 
-                                    label: group.group || 'Lainnya', 
-                                    disabled: true,
-                                  };
-                                  
-                                  const groupItems = items
-                                    .filter(item => item && typeof item === 'object')
-                                    .map(item => ({
-                                      value: JSON.stringify(item),
-                                      label: `${item.courier || 'Kurir'} - ${item.service || 'Layanan'} (${item.etd || '-'}) - ${currencyFormat(item.price || 0)}`,
-                                    }));
-                                  
-                                  return groupItems.length > 0 ? [groupHeader, ...groupItems] : [];
-                                });
+                                // Filter hanya grup Regular
+                                const regularGroup = courierOptions.find(group => group.group === "Regular");
+                                
+                                if (!regularGroup || !Array.isArray(regularGroup.items)) return [];
+                                
+                                return regularGroup.items
+                                  .filter(item => item && typeof item === 'object')
+                                  .map(item => ({
+                                    value: JSON.stringify(item),
+                                    label: `${item.courier || 'Kurir'} - ${item.service || 'Layanan'} (${item.etd || '-'}) - ${currencyFormat(item.price || 0)}`,
+                                  }));
                               } catch (error) {
                                 console.error("Error formatting courier options:", error);
                                 return [];
@@ -4621,7 +4593,7 @@ export default function Cart() {
                             })()}
                             value={form.values.courier ? JSON.stringify(form.values.courier) : null}
                             onChange={(value) => {
-                              if (value && !value.startsWith('__group_')) {
+                              if (value) {
                                 try {
                                   const courier = JSON.parse(value);
                                   if (courier && typeof courier === 'object') {
@@ -4636,6 +4608,15 @@ export default function Cart() {
                             clearable
                             nothingFoundMessage="Tidak ada kurir tersedia"
                           />
+
+                          {form.values.courier && (
+                            <Card withBorder p="sm" bg="green.0" mt="sm">
+                              <Text size="sm" fw={500}>Kurir dipilih:</Text>
+                              <Text size="sm">{form.values.courier.name || '-'} - {form.values.courier.service || '-'}</Text>
+                              <Text size="sm">Estimasi: {form.values.courier.etd || '-'}</Text>
+                              <Text size="sm" fw={600}>Biaya: {currencyFormat(form.values.courier.price || 0)}</Text>
+                            </Card>
+                          )}
                         </>
                       ) : (
                         <Card withBorder p="sm" bg="yellow.0">
