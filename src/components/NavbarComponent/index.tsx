@@ -1466,6 +1466,15 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                       Merchandise
                     </Link>
 
+                    <Link
+                      href="/tracking"
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                        route === "/tracking" ? "bg-primary-darker text-white shadow-md" : "text-primary-light-200 hover:text-white hover:bg-primary-light-700/40"
+                      }`}
+                    >
+                      Tracking
+                    </Link>
+
                     {showTalentVenue && (
                       <Link
                         href="/talent"
@@ -1487,6 +1496,8 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                         Venue
                       </Link>
                     )}
+
+                    
 
                     <div className="w-10">
                       <button 
