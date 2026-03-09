@@ -1,0 +1,1500 @@
+// // pages/tracking/index.tsx
+// import { useState, useEffect } from 'react';
+// import { useRouter } from 'next/router';
+// import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+// import { 
+//   faQrcode,
+//   faKeyboard,
+//   faSpinner,
+//   faTruck,
+//   faMapMarkerAlt,
+//   faPhone,
+//   faUser,
+//   faBox
+// } from '@fortawesome/free-solid-svg-icons';
+// import { Icon } from "@iconify/react/dist/iconify.js";
+// import {
+//   Container,
+//   Card,
+//   Stack,
+//   Flex,
+//   Text,
+//   Title,
+//   Timeline,
+//   ThemeIcon,
+//   Badge,
+//   Divider,
+//   Image,
+//   NumberFormatter,
+//   Button,
+//   Box,
+//   Alert,
+//   Loader,
+//   Grid,
+//   ScrollArea,
+//   AspectRatio,
+//   Group
+// } from "@mantine/core";
+// import QrScannerTracking from '@/components/QrScannerTracking';
+// import { Get } from '@/utils/REST';
+// import Cookies from 'js-cookie';
+
+// // Interfaces berdasarkan response
+// interface TrackingManifest {
+//   id: number;
+//   tracking_status_id: number;
+//   order_id: number;
+//   order_courier_id: number;
+//   tracking_number: string;
+//   status_name: string;
+//   description: string;
+//   location: string;
+//   image: string | null;
+//   courier_time: string | null;
+//   pic_name: string;
+//   created_by: string | null;
+//   created_at: string;
+//   deleted_at: string | null;
+//   tracking_status: {
+//     id: number;
+//     status_delivery: string;
+//     description: string;
+//     active_status: number;
+//     updated_at: string | null;
+//     deleted_at: string | null;
+//   };
+// }
+
+// interface TrackingAddress {
+//   id: number;
+//   order_id: number;
+//   is_main_address: number;
+//   province_id: number;
+//   city_id: number;
+//   address_detail: string;
+//   address_name: string | null;
+//   zipcode: number;
+//   latitude: string;
+//   longitude: string;
+//   nama_penerima: string;
+//   phone: string;
+//   is_active: number;
+// }
+
+// interface TrackingCourier {
+//   id: number;
+//   order_id: number;
+//   main: string;
+//   type: string;
+//   price: string;
+//   courier_company: string;
+//   courier_type: string;
+//   courier_service: string | null;
+//   etd: string;
+//   etd_time: string | null;
+//   tracking_number: string | null;
+//   delivery_id: string;
+// }
+
+// interface TrackingDetail {
+//   id: number;
+//   order_product_id: number;
+//   product_id: number;
+//   store_location_id: number | null;
+//   creator_id: number | null;
+//   product_varian_id: number | null;
+//   qty: number;
+//   price: string;
+//   order_notes: string | null;
+//   product_images: Array<{
+//     id: number;
+//     product_id: number;
+//     image: string;
+//     image_url: string;
+//   }>;
+//   product: {
+//     id: number;
+//     product_name: string;
+//     price: string;
+//     store_location_id: number;
+//     average_star: string;
+//     total_review: number;
+//     total_sold: number;
+//     images: Array<{
+//       id: number;
+//       product_id: number;
+//       image: string;
+//       image_url: string;
+//     }>;
+//   };
+//   variant: null;
+// }
+
+// interface TrackingData {
+//   id: number;
+//   store_location_id: number;
+//   invoice_no: string;
+//   user_id: string;
+//   total_qty: number;
+//   total_price: number;
+//   delivery_price: number;
+//   grandtotal: number;
+//   admin_fee: number;
+//   ppn: null;
+//   payment_method_id: number;
+//   payment_method: string;
+//   transaction_status_id: number;
+//   payment_status: string;
+//   payment_channel_id: string;
+//   xendit_url: string;
+//   admin_fee_plus: null;
+//   created_by: null;
+//   updated_by: null;
+//   created_at: string;
+//   updated_at: string;
+//   deleted_at: null;
+//   is_pemesan: null;
+//   payment_method_custom: string;
+//   payment_date: string;
+//   is_microsite: number;
+//   microsite_url: string;
+//   is_pickup: number;
+//   picked_up_at: null;
+//   picked_up_by: null;
+//   manifest: TrackingManifest[];
+//   address: TrackingAddress;
+//   courier: TrackingCourier;
+//   user: {
+//     id: number;
+//     name: string;
+//     email: string;
+//     phone: string | null;
+//   };
+//   detail: TrackingDetail[];
+// }
+
+// interface TrackingEvent {
+//   status: string;
+//   description: string;
+//   time: string;
+//   location?: string;
+//   isActive?: boolean;
+//   isCompleted?: boolean;
+// }
+
+// export default function TrackingPage() {
+//   const router = useRouter();
+//   const [selected, setSelected] = useState<'qr' | 'manual'>('qr');
+//   const [step, setStep] = useState(0);
+//   const [qrCode, setQrCode] = useState<string>('');
+//   const [manualInputValue, setManualInputValue] = useState<string>('');
+//   const [isAutoInputActive, setIsAutoInputActive] = useState<boolean>(false);
+//   const [isScanning, setIsScanning] = useState(false);
+//   const [loading, setLoading] = useState(false);
+//   const [trackingData, setTrackingData] = useState<TrackingData | null>(null);
+//   const [error, setError] = useState<string | null>(null);
+//   const [city, setCity] = useState<{ name: string }>();
+//   const [province, setProvince] = useState<{ name: string }>();
+
+//   // Set scanning aktif saat halaman pertama kali dimuat
+//   useEffect(() => {
+//     setIsScanning(true);
+//   }, []);
+
+//   // Handle auto-input dari scanner dengan delay 3 detik
+//   useEffect(() => {
+//     if (isAutoInputActive) {
+//       const timer = setTimeout(() => {
+//         setManualInputValue('');
+//         setIsAutoInputActive(false);
+//       }, 3000);
+
+//       return () => clearTimeout(timer);
+//     }
+//   }, [isAutoInputActive]);
+
+//   // Get province and city data
+//   useEffect(() => {
+//     getProvinceCity();
+//   }, [trackingData]);
+
+//   const getProvinceCity = async () => {
+//     if (!trackingData?.address?.city_id || !trackingData?.address?.province_id) return;
+
+//     try {
+//       const authToken = Cookies.get('auth_token') || Cookies.get('token');
+//       const config = authToken ? {
+//         headers: { 'Authorization': `Bearer ${authToken}` }
+//       } : {};
+
+//       const cityRes = await Get(`city/${trackingData.address.city_id}`, config) as any;
+//       if (cityRes?.data) {
+//         setCity(cityRes.data);
+//       }
+
+//       const provinceRes = await Get(`province/${trackingData.address.province_id}`, config) as any;
+//       if (provinceRes?.data) {
+//         setProvince(provinceRes.data);
+//       }
+//     } catch (error) {
+//       console.error('Error fetching province/city:', error);
+//     }
+//   };
+
+//   const processTrackingCode = async (code: string) => {
+//     try {
+//       setLoading(true);
+//       setError(null);
+//       setIsScanning(false);
+      
+//       const authToken = Cookies.get('auth_token') || Cookies.get('token');
+//       const config = authToken ? {
+//         headers: { 'Authorization': `Bearer ${authToken}` }
+//       } : {};
+
+//       const response = await Get(`order-product-invoice/${code}`, config) as any;
+      
+//       if (response?.data) {
+//         setTrackingData(response.data);
+//         setStep(2);
+//       } else {
+//         setError('Data tracking tidak ditemukan');
+//       }
+//     } catch (error: any) {
+//       console.error('Tracking error:', error);
+//       setError(error?.message || 'Terjadi kesalahan saat melacak pesanan');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const handleScan = (scannedData: any) => {
+//     if (scannedData?.success && scannedData?.data?.invoice_no) {
+//       processTrackingCode(scannedData.data.invoice_no);
+//     } else if (scannedData?.rawResponse?.invoice_no) {
+//       processTrackingCode(scannedData.rawResponse.invoice_no);
+//     } else {
+//       setError('QR code tidak valid');
+//     }
+//   };
+
+//   const handleManualSubmit = () => {
+//     if (!qrCode.trim() && !manualInputValue.trim()) {
+//       setError('Kode tracking tidak boleh kosong');
+//       return;
+//     }
+    
+//     const code = selected === 'manual' ? manualInputValue : qrCode;
+//     processTrackingCode(code);
+//   };
+
+//   const handleScanAgain = () => {
+//     setStep(0);
+//     setTrackingData(null);
+//     setQrCode('');
+//     setManualInputValue('');
+//     setError(null);
+//     setIsAutoInputActive(false);
+//     setIsScanning(true);
+//   };
+
+//   const formatDate = (dateString?: string): string => {
+//     if (!dateString) return "-";
+
+//     const date = new Date(dateString);
+//     const hours = date.getHours().toString().padStart(2, "0");
+//     const minutes = date.getMinutes().toString().padStart(2, "0");
+//     const day = date.getDate().toString().padStart(2, "0");
+//     const month = date.getMonth();
+//     const year = date.getFullYear();
+//     const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+//     return `${hours}:${minutes}, ${day} ${monthNames[month]} ${year}`;
+//   };
+
+//   const trackingEvents = (): TrackingEvent[] => {
+//     const manifestData = trackingData?.manifest;
+    
+//     if (!manifestData || manifestData.length === 0) {
+//       return [];
+//     }
+
+//     const sortedManifest = [...manifestData].sort((a, b) => 
+//       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+//     );
+
+//     return sortedManifest.map((item, index) => ({
+//       status: item.tracking_status?.status_delivery || item.status_name,
+//       description: item.description,
+//       time: formatDate(item.created_at),
+//       location: item.location,
+//       isCompleted: true,
+//       isActive: index === sortedManifest.length - 1
+//     }));
+//   };
+
+//   const renderTrackingResult = () => {
+//     if (!trackingData) {
+//       return (
+//         <div className="h-full flex items-center justify-center">
+//           <div className="text-center p-8">
+//             <ThemeIcon size={80} radius="xl" color="gray" variant="light" className="mb-4 mx-auto">
+//               <Icon icon="mdi:truck-delivery" width={40} />
+//             </ThemeIcon>
+//             <Text size="xl" fw={600} className="mb-2">Belum Ada Data Tracking</Text>
+//             <Text size="sm" c="dimmed" className="max-w-sm">
+//               Scan QR code atau masukkan kode tracking di sebelah kiri untuk melihat status pengiriman
+//             </Text>
+//           </div>
+//         </div>
+//       );
+//     }
+
+//     const events = trackingEvents();
+//     const manifestData = trackingData?.manifest;
+//     const trackingNumber = manifestData?.[0]?.tracking_number || '-';
+//     const estimatedDelivery = trackingData?.courier?.etd || "-";
+
+//     return (
+//       <ScrollArea h="calc(100vh - 200px)" className="pr-4">
+//         <Stack gap="lg">
+//           {/* Header Info */}
+//           <Card withBorder radius="md" className="bg-gradient-to-r from-blue-50 to-white">
+//             <Flex justify="space-between" align="center" wrap="wrap" gap="md">
+//               <Box>
+//                 <Text size="xs" c="dimmed">No. Invoice</Text>
+//                 <Text fw={700} size="lg">{trackingData.invoice_no}</Text>
+//                 <Text size="xs" c="dimmed" mt={4}>
+//                   {formatDate(trackingData.created_at)}
+//                 </Text>
+//               </Box>
+//               <Badge 
+//                 size="lg" 
+//                 color={trackingData.payment_status?.toLowerCase() === 'verified' ? 'green' : 'yellow'}
+//               >
+//                 {trackingData.payment_status}
+//               </Badge>
+//             </Flex>
+//           </Card>
+
+//           {/* Tracking Info */}
+//           {manifestData && manifestData.length > 0 && (
+//             <>
+//               <Card withBorder radius="md">
+//                 <Grid>
+//                   <Grid.Col span={6}>
+//                     <Text size="xs" c="dimmed">Kode Tracking</Text>
+//                     <Text fw={600}>{trackingNumber}</Text>
+//                   </Grid.Col>
+//                   <Grid.Col span={6}>
+//                     <Text size="xs" c="dimmed">Estimasi Tiba</Text>
+//                     <Text fw={600}>{estimatedDelivery}</Text>
+//                     {trackingData.courier?.etd_time && (
+//                       <Text size="xs" c="dimmed">Estimasi jam: {trackingData.courier.etd_time}</Text>
+//                     )}
+//                   </Grid.Col>
+//                 </Grid>
+//               </Card>
+
+//               <Card withBorder radius="md">
+//                 <Flex align="center" gap="md" wrap="wrap">
+//                   <ThemeIcon size="xl" radius="md" color="blue" variant="light">
+//                     <Icon icon="mdi:truck-fast" width={24} />
+//                   </ThemeIcon>
+//                   <Box>
+//                     <Text size="sm" c="dimmed">Kurir</Text>
+//                     <Text fw={600} className="capitalize">
+//                       {trackingData.courier?.main || "-"} - {trackingData.courier?.type || "-"}
+//                     </Text>
+//                   </Box>
+//                 </Flex>
+//               </Card>
+
+//               {/* Timeline */}
+//               <Card withBorder radius="md">
+//                 <Text fw={600} mb="xl" size="lg">Status Pengiriman</Text>
+//                 <Timeline active={events.findIndex(t => t.isActive)} bulletSize={24} lineWidth={2}>
+//                   {events.map((event, index) => (
+//                     <Timeline.Item
+//                       key={index}
+//                       bullet={
+//                         <ThemeIcon
+//                           size={24}
+//                           radius="xl"
+//                           color={event.isCompleted ? 'green' : event.isActive ? 'blue' : 'gray'}
+//                           variant={event.isCompleted || event.isActive ? 'filled' : 'light'}
+//                         >
+//                           <Icon 
+//                             icon={
+//                               event.isCompleted ? 'mdi:check' : 
+//                               event.isActive ? 'mdi:truck' : 
+//                               'mdi:circle-outline'
+//                             } 
+//                             width={14} 
+//                           />
+//                         </ThemeIcon>
+//                       }
+//                       title={
+//                         <Text fw={600} c={event.isCompleted ? 'green' : event.isActive ? 'blue' : 'dimmed'}>
+//                           {event.status}
+//                         </Text>
+//                       }
+//                     >
+//                       <Stack gap={4}>
+//                         {event.location && (
+//                           <Text size="xs" c="dimmed">{event.location}</Text>
+//                         )}
+//                         <Text size="sm">{event.description}</Text>
+//                         <Text size="xs" c="dimmed" mt={4}>{event.time}</Text>
+//                       </Stack>
+//                     </Timeline.Item>
+//                   ))}
+//                 </Timeline>
+//               </Card>
+//             </>
+//           )}
+
+//           {/* Detail Pesanan */}
+//           <Card withBorder radius="md">
+//             <Text fw={600} mb="md" size="lg">Detail Pesanan</Text>
+            
+//             <Stack gap="md">
+//               {trackingData.detail.map((item) => {
+//                 const price = parseInt(item.price || "0");
+//                 const qty = item.qty || 0;
+//                 const totalPrice = price * qty;
+                
+//                 return (
+//                   <Flex key={item.id} gap="md" className="border-b border-gray-100 pb-3 last:border-0">
+//                     <Image 
+//                       src={item.product?.images?.[0]?.image_url || "/placeholder.png"} 
+//                       w={60} 
+//                       h={60} 
+//                       radius="md"
+//                       className="bg-gray-100"
+//                     />
+//                     <Box style={{ flex: 1 }}>
+//                       <Text fw={600}>{item.product?.product_name || "-"}</Text>
+//                       <Flex justify="space-between" mt="xs">
+//                         <Text size="sm">{qty} x <NumberFormatter value={price} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+//                         <Text fw={600}><NumberFormatter value={totalPrice} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+//                       </Flex>
+//                       {item.order_notes && (
+//                         <Text size="xs" c="dimmed" fs="italic" mt={2}>
+//                           Catatan: {item.order_notes}
+//                         </Text>
+//                       )}
+//                     </Box>
+//                   </Flex>
+//                 );
+//               })}
+//             </Stack>
+
+//             <Divider my="md" />
+
+//             {/* Total */}
+//             <Stack gap="xs">
+//               <Flex justify="space-between">
+//                 <Text c="dimmed">Subtotal Produk</Text>
+//                 <Text fw={500}><NumberFormatter value={trackingData.total_price || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+//               </Flex>
+//               <Flex justify="space-between">
+//                 <Text c="dimmed">Biaya Admin</Text>
+//                 <Text fw={500}><NumberFormatter value={trackingData.admin_fee || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+//               </Flex>
+//               <Flex justify="space-between">
+//                 <Text c="dimmed">Biaya Pengiriman</Text>
+//                 <Text fw={500}><NumberFormatter value={trackingData.delivery_price || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+//               </Flex>
+//               <Divider />
+//               <Flex justify="space-between">
+//                 <Text fw={700}>Total</Text>
+//                 <Text fw={700} c="blue"><NumberFormatter value={trackingData.grandtotal || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+//               </Flex>
+//             </Stack>
+//           </Card>
+
+//           {/* Alamat Pengiriman */}
+//           <Card withBorder radius="md">
+//             <Text fw={600} mb="md" size="lg">Alamat Pengiriman</Text>
+//             <Stack gap="xs">
+//               <Flex align="center" gap="sm">
+//                 <ThemeIcon size="sm" radius="xl" color="blue" variant="light">
+//                   <Icon icon="mdi:user" width={14} />
+//                 </ThemeIcon>
+//                 <Text>{trackingData.address.nama_penerima}</Text>
+//               </Flex>
+//               <Flex align="center" gap="sm">
+//                 <ThemeIcon size="sm" radius="xl" color="blue" variant="light">
+//                   <Icon icon="mdi:phone" width={14} />
+//                 </ThemeIcon>
+//                 <Text>{trackingData.address.phone || "-"}</Text>
+//               </Flex>
+//               <Flex align="center" gap="sm">
+//                 <ThemeIcon size="sm" radius="xl" color="blue" variant="light">
+//                   <Icon icon="mdi:map-marker" width={14} />
+//                 </ThemeIcon>
+//                 <Text>
+//                   {province?.name || "-"}, {city?.name || "-"}, {trackingData.address.zipcode}
+//                   <br />
+//                   {trackingData.address.address_detail}
+//                 </Text>
+//               </Flex>
+//             </Stack>
+//           </Card>
+
+//           <Button 
+//             variant="light" 
+//             color="blue" 
+//             onClick={handleScanAgain}
+//             leftSection={<Icon icon="mdi:refresh" width={18} />}
+//             fullWidth
+//             size="md"
+//           >
+//             Scan Lagi
+//           </Button>
+//         </Stack>
+//       </ScrollArea>
+//     );
+//   };
+
+//   return (
+//     <div className="min-h-screen bg-gray-50 pt-16">
+//       <Container size="xl" className="h-full">
+//         {/* Header */}
+//         <div className="mb-4">
+//           <Flex align="center" gap="md">
+//             <ThemeIcon size={40} radius="md" color="blue" variant="light">
+//               <Icon icon="mdi:truck-fast" width={24} />
+//             </ThemeIcon>
+//             <Box>
+//               <Title order={2} className="!text-2xl font-semibold">Lacak Pesanan</Title>
+//               <Text size="sm" c="dimmed">
+//                 Scan QR atau masukkan kode tracking untuk melihat status pengiriman
+//               </Text>
+//             </Box>
+//           </Flex>
+//         </div>
+
+//         {/* Split Screen Layout */}
+//         <Grid gutter="md" className="h-[calc(100vh-180px)]">
+//           {/* Left Side - Scanner/Input */}
+//           <Grid.Col span={6}>
+//             <Card shadow="sm" radius="lg" withBorder className="h-full flex flex-col">
+//               <Card.Section withBorder inheritPadding py="md">
+//                 <Flex gap="md" justify="center">
+//                   <Button
+//                     variant={selected === 'qr' ? 'filled' : 'light'}
+//                     color="blue"
+//                     leftSection={<FontAwesomeIcon icon={faQrcode} />}
+//                     onClick={() => {
+//                       setSelected('qr');
+//                       setStep(0);
+//                       setIsScanning(true);
+//                       setTrackingData(null);
+//                       setError(null);
+//                     }}
+//                     radius="md"
+//                     style={{ flex: 1 }}
+//                   >
+//                     Scan QR
+//                   </Button>
+//                   <Button
+//                     variant={selected === 'manual' ? 'filled' : 'light'}
+//                     color="blue"
+//                     leftSection={<FontAwesomeIcon icon={faKeyboard} />}
+//                     onClick={() => {
+//                       setSelected('manual');
+//                       setStep(0);
+//                       setIsScanning(false);
+//                       setTrackingData(null);
+//                       setError(null);
+//                     }}
+//                     radius="md"
+//                     style={{ flex: 1 }}
+//                   >
+//                     Input Manual
+//                   </Button>
+//                 </Flex>
+//               </Card.Section>
+
+//               <div className="p-4 flex-1">
+//                 {selected === 'qr' && (
+//                   <div className="h-full flex flex-col">
+//                     <div className="flex-1 relative bg-black rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
+//                       {/* QrScannerTracking langsung aktif tanpa background */}
+//                       <div className="absolute inset-0">
+//                         <QrScannerTracking
+//                           isOpen={isScanning}
+//                           step={step}
+//                           setStep={setStep}
+//                           setData={handleScan}
+//                           scanType="merchandise"
+//                         />
+//                       </div>
+                      
+//                       {/* Frame scanner minimalis - hanya 4 corner tipis */}
+//                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+//                         <div className="relative w-64 h-64">
+//                           {/* Corner putih tipis */}
+//                           <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-white/80 rounded-tl-2xl"></div>
+//                           <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-white/80 rounded-tr-2xl"></div>
+//                           <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-white/80 rounded-bl-2xl"></div>
+//                           <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-white/80 rounded-br-2xl"></div>
+                          
+//                           {/* Garis scan animasi - opsional, bisa dihapus jika tidak mau */}
+//                           <div className="absolute left-4 right-4 h-0.5 bg-blue-500 animate-scan rounded-full shadow-lg"></div>
+//                         </div>
+//                       </div>
+                      
+//                       {/* Teks instruksi di bagian bawah */}
+//                       <div className="absolute bottom-4 left-0 right-0 text-center">
+//                         <Text size="sm" c="white" className="bg-black/50 py-1 px-3 inline-block rounded-full">
+//                           Arahkan kamera ke QR code
+//                         </Text>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 )}
+
+//                 {selected === 'manual' && (
+//                   <div className="border rounded-xl bg-gray-50 p-6 max-w-md mx-auto">
+//                     <div className="space-y-4">
+//                       <div>
+//                         <label className="block text-sm font-medium text-gray-700 mb-2">
+//                           Kode Tracking
+//                         </label>
+//                         <input
+//                           type="text"
+//                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+//                           placeholder="Contoh: INV/202403/12345"
+//                           value={isAutoInputActive ? manualInputValue : qrCode}
+//                           onChange={(e) => setQrCode(e.target.value)}
+//                           onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
+//                           disabled={isAutoInputActive}
+//                           readOnly={isAutoInputActive}
+//                         />
+//                         {isAutoInputActive && (
+//                           <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+//                             <FontAwesomeIcon icon={faSpinner} spin />
+//                             Memproses kode...
+//                           </p>
+//                         )}
+//                       </div>
+//                       <button
+//                         onClick={handleManualSubmit}
+//                         disabled={(!qrCode.trim() && !manualInputValue.trim()) || isAutoInputActive || loading}
+//                         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+//                       >
+//                         {loading ? 'Memproses...' : 'Lacak Pesanan'}
+//                       </button>
+//                     </div>
+//                   </div>
+//                 )}
+
+//                 {/* Error Message */}
+//                 {error && (
+//                   <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+//                     <div className="flex items-center gap-2 text-red-700">
+//                       <Icon icon="mdi:alert-circle" width={18} />
+//                       <span className="text-sm font-medium">{error}</span>
+//                     </div>
+//                   </div>
+//                 )}
+
+//                 {/* Loading State */}
+//                 {loading && (
+//                   <div className="flex justify-center py-8">
+//                     <Loader size="md" />
+//                   </div>
+//                 )}
+//               </div>
+//             </Card>
+//           </Grid.Col>
+
+//           {/* Right Side - Tracking Result */}
+//           <Grid.Col span={6}>
+//             <Card shadow="sm" radius="lg" withBorder className="h-full flex flex-col">
+//               <Card.Section withBorder inheritPadding py="md">
+//                 <Flex align="center" gap="sm">
+//                   <ThemeIcon size="md" radius="xl" color="blue" variant="light">
+//                     <Icon icon="mdi:truck-delivery" width={16} />
+//                   </ThemeIcon>
+//                   <Text fw={600}>Status Pengiriman</Text>
+//                 </Flex>
+//               </Card.Section>
+
+//               <div className="p-4 flex-1">
+//                 {renderTrackingResult()}
+//               </div>
+//             </Card>
+//           </Grid.Col>
+//         </Grid>
+//       </Container>
+
+//       <style jsx>{`
+//         @keyframes scan {
+//           0%, 100% {
+//             top: 0%;
+//           }
+//           50% {
+//             top: 100%;
+//           }
+//         }
+//         .animate-scan {
+//           animation: scan 2s ease-in-out infinite;
+//         }
+//       `}</style>
+//     </div>
+//   );
+// }
+
+// pages/tracking/index.tsx
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faQrcode,
+  faKeyboard,
+  faSpinner,
+  faTruck,
+  faMapMarkerAlt,
+  faPhone,
+  faUser,
+  faBox
+} from '@fortawesome/free-solid-svg-icons';
+import { Icon } from "@iconify/react/dist/iconify.js";
+import {
+  Container,
+  Card,
+  Stack,
+  Flex,
+  Text,
+  Title,
+  Timeline,
+  ThemeIcon,
+  Badge,
+  Divider,
+  Image,
+  NumberFormatter,
+  Button,
+  Box,
+  Alert,
+  Loader,
+  Grid,
+  ScrollArea,
+  AspectRatio,
+  Group
+} from "@mantine/core";
+import QrScannerTracking from '@/components/QrScannerTracking';
+import { Get, Post } from '@/utils/REST';
+import Cookies from 'js-cookie';
+
+// Interfaces berdasarkan response
+interface TrackingManifest {
+  id: number;
+  tracking_status_id: number;
+  order_id: number;
+  order_courier_id: number;
+  tracking_number: string;
+  status_name: string;
+  description: string;
+  location: string;
+  image: string | null;
+  courier_time: string | null;
+  pic_name: string;
+  created_by: string | null;
+  created_at: string;
+  deleted_at: string | null;
+  tracking_status: {
+    id: number;
+    status_delivery: string;
+    description: string;
+    active_status: number;
+    updated_at: string | null;
+    deleted_at: string | null;
+  };
+}
+
+interface TrackingAddress {
+  id: number;
+  order_id: number;
+  is_main_address: number;
+  province_id: number;
+  city_id: number;
+  address_detail: string;
+  address_name: string | null;
+  zipcode: number;
+  latitude: string;
+  longitude: string;
+  nama_penerima: string;
+  phone: string;
+  is_active: number;
+}
+
+interface TrackingCourier {
+  id: number;
+  order_id: number;
+  main: string;
+  type: string;
+  price: string;
+  courier_company: string;
+  courier_type: string;
+  courier_service: string | null;
+  etd: string;
+  etd_time: string | null;
+  tracking_number: string | null;
+  delivery_id: string;
+}
+
+interface TrackingDetail {
+  id: number;
+  order_product_id: number;
+  product_id: number;
+  store_location_id: number | null;
+  creator_id: number | null;
+  product_varian_id: number | null;
+  qty: number;
+  price: string;
+  order_notes: string | null;
+  product_images: Array<{
+    id: number;
+    product_id: number;
+    image: string;
+    image_url: string;
+  }>;
+  product: {
+    id: number;
+    product_name: string;
+    price: string;
+    store_location_id: number;
+    average_star: string;
+    total_review: number;
+    total_sold: number;
+    images: Array<{
+      id: number;
+      product_id: number;
+      image: string;
+      image_url: string;
+    }>;
+  };
+  variant: null;
+}
+
+interface TrackingData {
+  id: number;
+  store_location_id: number;
+  invoice_no: string;
+  user_id: string;
+  total_qty: number;
+  total_price: number;
+  delivery_price: number;
+  grandtotal: number;
+  admin_fee: number;
+  ppn: null;
+  payment_method_id: number;
+  payment_method: string;
+  transaction_status_id: number;
+  payment_status: string;
+  payment_channel_id: string;
+  xendit_url: string;
+  admin_fee_plus: null;
+  created_by: null;
+  updated_by: null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: null;
+  is_pemesan: null;
+  payment_method_custom: string;
+  payment_date: string;
+  is_microsite: number;
+  microsite_url: string;
+  is_pickup: number;
+  picked_up_at: null;
+  picked_up_by: null;
+  manifest: TrackingManifest[];
+  address: TrackingAddress;
+  courier: TrackingCourier;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string | null;
+  };
+  detail: TrackingDetail[];
+}
+
+interface TrackingEvent {
+  status: string;
+  description: string;
+  time: string;
+  location?: string;
+  isActive?: boolean;
+  isCompleted?: boolean;
+}
+
+export default function TrackingPage() {
+  const router = useRouter();
+  const [selected, setSelected] = useState<'qr' | 'manual'>('qr');
+  const [step, setStep] = useState(0);
+  const [manualInputValue, setManualInputValue] = useState<string>('');
+  const [isAutoInputActive, setIsAutoInputActive] = useState<boolean>(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [trackingData, setTrackingData] = useState<TrackingData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [city, setCity] = useState<{ name: string }>();
+  const [province, setProvince] = useState<{ name: string }>();
+
+  // Set scanning aktif saat halaman pertama kali dimuat
+  useEffect(() => {
+    setIsScanning(true);
+  }, []);
+
+  // Handle auto-input dari scanner dengan delay 3 detik
+  useEffect(() => {
+    if (isAutoInputActive) {
+      const timer = setTimeout(() => {
+        setManualInputValue('');
+        setIsAutoInputActive(false);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAutoInputActive]);
+
+  // Get province and city data
+  useEffect(() => {
+    getProvinceCity();
+  }, [trackingData]);
+
+  const getProvinceCity = async () => {
+    if (!trackingData?.address?.city_id || !trackingData?.address?.province_id) return;
+
+    try {
+      // Get membutuhkan 2 parameter: endpoint dan params (bisa dikosongkan)
+      const cityRes = await Get(`city/${trackingData.address.city_id}`, {}) as any;
+      if (cityRes?.data) {
+        setCity(cityRes.data);
+      }
+
+      const provinceRes = await Get(`province/${trackingData.address.province_id}`, {}) as any;
+      if (provinceRes?.data) {
+        setProvince(provinceRes.data);
+      }
+    } catch (error) {
+      console.error('Error fetching province/city:', error);
+    }
+  };
+
+  const processTrackingCode = async (code: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setIsScanning(false);
+      
+      // Post dengan 2 parameter: endpoint dan data
+      const response = await Post('tracking/order/', { 
+        invoice_no: code,
+        qr_code: code 
+      }) as any;
+      
+      console.log('Tracking response:', response);
+      
+      // Sesuaikan dengan struktur response dari tracking/order/
+      if (response?.data) {
+        setTrackingData(response.data);
+        setStep(2);
+      } else if (response?.success && response?.data) {
+        setTrackingData(response.data);
+        setStep(2);
+      } else if (response?.invoice_no) {
+        setTrackingData(response as TrackingData);
+        setStep(2);
+      } else {
+        setError('Data tracking tidak ditemukan');
+      }
+    } catch (error: any) {
+      console.error('Tracking error:', error);
+      setError(error?.message || 'Terjadi kesalahan saat melacak pesanan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleScan = (scannedData: any) => {
+    console.log('Scan result:', scannedData);
+    
+    if (scannedData?.success && scannedData?.data?.invoice_no) {
+      processTrackingCode(scannedData.data.invoice_no);
+    } else if (scannedData?.rawResponse?.data?.invoice_no) {
+      processTrackingCode(scannedData.rawResponse.data.invoice_no);
+    } else if (scannedData?.rawResponse?.invoice_no) {
+      processTrackingCode(scannedData.rawResponse.invoice_no);
+    } else if (scannedData?.data?.invoice_no) {
+      processTrackingCode(scannedData.data.invoice_no);
+    } else {
+      setError('QR code tidak valid');
+    }
+  };
+
+  const handleManualSubmit = () => {
+    if (!manualInputValue.trim()) {
+      setError('Kode tracking tidak boleh kosong');
+      return;
+    }
+    
+    processTrackingCode(manualInputValue);
+  };
+
+  const handleScanAgain = () => {
+    setStep(0);
+    setTrackingData(null);
+    setManualInputValue('');
+    setError(null);
+    setIsAutoInputActive(false);
+    setIsScanning(true);
+  };
+
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return "-";
+
+    const date = new Date(dateString);
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = date.getMonth();
+    const year = date.getFullYear();
+    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+    return `${hours}:${minutes}, ${day} ${monthNames[month]} ${year}`;
+  };
+
+  const trackingEvents = (): TrackingEvent[] => {
+    const manifestData = trackingData?.manifest;
+    
+    if (!manifestData || manifestData.length === 0) {
+      return [];
+    }
+
+    const sortedManifest = [...manifestData].sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+
+    return sortedManifest.map((item, index) => ({
+      status: item.tracking_status?.status_delivery || item.status_name,
+      description: item.description,
+      time: formatDate(item.created_at),
+      location: item.location,
+      isCompleted: true,
+      isActive: index === sortedManifest.length - 1
+    }));
+  };
+
+  const renderTrackingResult = () => {
+    if (!trackingData) {
+      return (
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center p-8">
+            <ThemeIcon size={80} radius="xl" color="gray" variant="light" className="mb-4 mx-auto">
+              <Icon icon="mdi:truck-delivery" width={40} />
+            </ThemeIcon>
+            <Text size="xl" fw={600} className="mb-2">Belum Ada Data Tracking</Text>
+            <Text size="sm" c="dimmed" className="max-w-sm">
+              Scan QR code atau masukkan kode tracking di sebelah kiri untuk melihat status pengiriman
+            </Text>
+          </div>
+        </div>
+      );
+    }
+
+    const events = trackingEvents();
+    const manifestData = trackingData?.manifest;
+    const trackingNumber = manifestData?.[0]?.tracking_number || '-';
+    const estimatedDelivery = trackingData?.courier?.etd || "-";
+
+    return (
+      <ScrollArea h="calc(100vh - 200px)" className="pr-4">
+        <Stack gap="lg">
+          {/* Header Info */}
+          <Card withBorder radius="md" className="bg-gradient-to-r from-blue-50 to-white">
+            <Flex justify="space-between" align="center" wrap="wrap" gap="md">
+              <Box>
+                <Text size="xs" c="dimmed">No. Invoice</Text>
+                <Text fw={700} size="lg">{trackingData.invoice_no}</Text>
+                <Text size="xs" c="dimmed" mt={4}>
+                  {formatDate(trackingData.created_at)}
+                </Text>
+              </Box>
+              <Badge 
+                size="lg" 
+                color={trackingData.payment_status?.toLowerCase() === 'verified' ? 'green' : 'yellow'}
+              >
+                {trackingData.payment_status}
+              </Badge>
+            </Flex>
+          </Card>
+
+          {/* Tracking Info */}
+          {manifestData && manifestData.length > 0 && (
+            <>
+              <Card withBorder radius="md">
+                <Grid>
+                  <Grid.Col span={6}>
+                    <Text size="xs" c="dimmed">Kode Tracking</Text>
+                    <Text fw={600}>{trackingNumber}</Text>
+                  </Grid.Col>
+                  <Grid.Col span={6}>
+                    <Text size="xs" c="dimmed">Estimasi Tiba</Text>
+                    <Text fw={600}>{estimatedDelivery}</Text>
+                    {trackingData.courier?.etd_time && (
+                      <Text size="xs" c="dimmed">Estimasi jam: {trackingData.courier.etd_time}</Text>
+                    )}
+                  </Grid.Col>
+                </Grid>
+              </Card>
+
+              <Card withBorder radius="md">
+                <Flex align="center" gap="md" wrap="wrap">
+                  <ThemeIcon size="xl" radius="md" color="blue" variant="light">
+                    <Icon icon="mdi:truck-fast" width={24} />
+                  </ThemeIcon>
+                  <Box>
+                    <Text size="sm" c="dimmed">Kurir</Text>
+                    <Text fw={600} className="capitalize">
+                      {trackingData.courier?.main || "-"} - {trackingData.courier?.type || "-"}
+                    </Text>
+                  </Box>
+                </Flex>
+              </Card>
+
+              {/* Timeline */}
+              <Card withBorder radius="md">
+                <Text fw={600} mb="xl" size="lg">Status Pengiriman</Text>
+                <Timeline active={events.findIndex(t => t.isActive)} bulletSize={24} lineWidth={2}>
+                  {events.map((event, index) => (
+                    <Timeline.Item
+                      key={index}
+                      bullet={
+                        <ThemeIcon
+                          size={24}
+                          radius="xl"
+                          color={event.isCompleted ? 'green' : event.isActive ? 'blue' : 'gray'}
+                          variant={event.isCompleted || event.isActive ? 'filled' : 'light'}
+                        >
+                          <Icon 
+                            icon={
+                              event.isCompleted ? 'mdi:check' : 
+                              event.isActive ? 'mdi:truck' : 
+                              'mdi:circle-outline'
+                            } 
+                            width={14} 
+                          />
+                        </ThemeIcon>
+                      }
+                      title={
+                        <Text fw={600} c={event.isCompleted ? 'green' : event.isActive ? 'blue' : 'dimmed'}>
+                          {event.status}
+                        </Text>
+                      }
+                    >
+                      <Stack gap={4}>
+                        {event.location && (
+                          <Text size="xs" c="dimmed">{event.location}</Text>
+                        )}
+                        <Text size="sm">{event.description}</Text>
+                        <Text size="xs" c="dimmed" mt={4}>{event.time}</Text>
+                      </Stack>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              </Card>
+            </>
+          )}
+
+          {/* Detail Pesanan */}
+          <Card withBorder radius="md">
+            <Text fw={600} mb="md" size="lg">Detail Pesanan</Text>
+            
+            <Stack gap="md">
+              {trackingData.detail.map((item) => {
+                const price = parseInt(item.price || "0");
+                const qty = item.qty || 0;
+                const totalPrice = price * qty;
+                
+                return (
+                  <Flex key={item.id} gap="md" className="border-b border-gray-100 pb-3 last:border-0">
+                    <Image 
+                      src={item.product?.images?.[0]?.image_url || "/placeholder.png"} 
+                      w={60} 
+                      h={60} 
+                      radius="md"
+                      className="bg-gray-100"
+                    />
+                    <Box style={{ flex: 1 }}>
+                      <Text fw={600}>{item.product?.product_name || "-"}</Text>
+                      <Flex justify="space-between" mt="xs">
+                        <Text size="sm">{qty} x <NumberFormatter value={price} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+                        <Text fw={600}><NumberFormatter value={totalPrice} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+                      </Flex>
+                      {item.order_notes && (
+                        <Text size="xs" c="dimmed" fs="italic" mt={2}>
+                          Catatan: {item.order_notes}
+                        </Text>
+                      )}
+                    </Box>
+                  </Flex>
+                );
+              })}
+            </Stack>
+
+            <Divider my="md" />
+
+            {/* Total */}
+            <Stack gap="xs">
+              <Flex justify="space-between">
+                <Text c="dimmed">Subtotal Produk</Text>
+                <Text fw={500}><NumberFormatter value={trackingData.total_price || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+              </Flex>
+              <Flex justify="space-between">
+                <Text c="dimmed">Biaya Admin</Text>
+                <Text fw={500}><NumberFormatter value={trackingData.admin_fee || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+              </Flex>
+              <Flex justify="space-between">
+                <Text c="dimmed">Biaya Pengiriman</Text>
+                <Text fw={500}><NumberFormatter value={trackingData.delivery_price || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+              </Flex>
+              <Divider />
+              <Flex justify="space-between">
+                <Text fw={700}>Total</Text>
+                <Text fw={700} c="blue"><NumberFormatter value={trackingData.grandtotal || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+              </Flex>
+            </Stack>
+          </Card>
+
+          {/* Alamat Pengiriman */}
+          <Card withBorder radius="md">
+            <Text fw={600} mb="md" size="lg">Alamat Pengiriman</Text>
+            <Stack gap="xs">
+              <Flex align="center" gap="sm">
+                <ThemeIcon size="sm" radius="xl" color="blue" variant="light">
+                  <Icon icon="mdi:user" width={14} />
+                </ThemeIcon>
+                <Text>{trackingData.address.nama_penerima}</Text>
+              </Flex>
+              <Flex align="center" gap="sm">
+                <ThemeIcon size="sm" radius="xl" color="blue" variant="light">
+                  <Icon icon="mdi:phone" width={14} />
+                </ThemeIcon>
+                <Text>{trackingData.address.phone || "-"}</Text>
+              </Flex>
+              <Flex align="center" gap="sm">
+                <ThemeIcon size="sm" radius="xl" color="blue" variant="light">
+                  <Icon icon="mdi:map-marker" width={14} />
+                </ThemeIcon>
+                <Text>
+                  {province?.name || "-"}, {city?.name || "-"}, {trackingData.address.zipcode}
+                  <br />
+                  {trackingData.address.address_detail}
+                </Text>
+              </Flex>
+            </Stack>
+          </Card>
+
+          <Button 
+            variant="light" 
+            color="blue" 
+            onClick={handleScanAgain}
+            leftSection={<Icon icon="mdi:refresh" width={18} />}
+            fullWidth
+            size="md"
+          >
+            Scan Lagi
+          </Button>
+        </Stack>
+      </ScrollArea>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Container size="xl" className="h-full pt-20 pb-6">
+        {/* Header dengan gap dari navbar */}
+        <div className="mb-6">
+          <Flex align="center" gap="md">
+            <ThemeIcon size={40} radius="md" color="blue" variant="light">
+              <Icon icon="mdi:truck-fast" width={24} />
+            </ThemeIcon>
+            <Box>
+              <Title order={2} className="!text-2xl font-semibold">Lacak Pesanan</Title>
+              <Text size="sm" c="dimmed">
+                Scan QR atau masukkan kode tracking untuk melihat status pengiriman
+              </Text>
+            </Box>
+          </Flex>
+        </div>
+
+        {/* Split Screen Layout */}
+        <Grid gutter="md" className="h-[calc(100vh-240px)]">
+          {/* Left Side - Scanner/Input */}
+          <Grid.Col span={6}>
+            <Card shadow="sm" radius="lg" withBorder className="h-full flex flex-col">
+              <Card.Section withBorder inheritPadding py="md">
+                <Flex gap="md" justify="center">
+                  <Button
+                    variant={selected === 'qr' ? 'filled' : 'light'}
+                    color="blue"
+                    leftSection={<FontAwesomeIcon icon={faQrcode} />}
+                    onClick={() => {
+                      setSelected('qr');
+                      setStep(0);
+                      setIsScanning(true);
+                      setTrackingData(null);
+                      setError(null);
+                    }}
+                    radius="md"
+                    style={{ flex: 1 }}
+                  >
+                    Scan QR
+                  </Button>
+                  <Button
+                    variant={selected === 'manual' ? 'filled' : 'light'}
+                    color="blue"
+                    leftSection={<FontAwesomeIcon icon={faKeyboard} />}
+                    onClick={() => {
+                      setSelected('manual');
+                      setStep(0);
+                      setIsScanning(false);
+                      setTrackingData(null);
+                      setError(null);
+                    }}
+                    radius="md"
+                    style={{ flex: 1 }}
+                  >
+                    Input Manual
+                  </Button>
+                </Flex>
+              </Card.Section>
+
+              <div className="p-4 flex-1">
+                {selected === 'qr' && (
+                  <div className="h-full flex flex-col">
+                    <div className="flex-1 relative bg-black rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
+                      {/* QrScannerTracking langsung aktif */}
+                      <div className="absolute inset-0">
+                        <QrScannerTracking
+                          isOpen={isScanning}
+                          step={step}
+                          setStep={setStep}
+                          setData={handleScan}
+                          scanType="merchandise"
+                        />
+                      </div>
+                      
+                      {/* Frame scanner minimalis */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="relative w-64 h-64">
+                          <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-white/80 rounded-tl-2xl"></div>
+                          <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-white/80 rounded-tr-2xl"></div>
+                          <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-white/80 rounded-bl-2xl"></div>
+                          <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-white/80 rounded-br-2xl"></div>
+                          <div className="absolute left-4 right-4 h-0.5 bg-blue-500 animate-scan rounded-full shadow-lg"></div>
+                        </div>
+                      </div>
+                      
+                      <div className="absolute bottom-4 left-0 right-0 text-center">
+                        <Text size="sm" c="white" className="bg-black/50 py-1 px-3 inline-block rounded-full">
+                          Arahkan kamera ke QR code
+                        </Text>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selected === 'manual' && (
+                  <div className="border rounded-xl bg-gray-50 p-6 max-w-md mx-auto">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          No. Invoice / Kode Tracking
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                          placeholder="Contoh: INV/202403/12345"
+                          value={manualInputValue}
+                          onChange={(e) => setManualInputValue(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
+                          disabled={loading}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Masukkan no. invoice atau kode tracking
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleManualSubmit}
+                        disabled={!manualInputValue.trim() || loading}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <FontAwesomeIcon icon={faSpinner} spin />
+                            Memproses...
+                          </span>
+                        ) : (
+                          'Lacak Pesanan'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error Message */}
+                {error && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-red-700">
+                      <Icon icon="mdi:alert-circle" width={18} />
+                      <span className="text-sm font-medium">{error}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </Grid.Col>
+
+          {/* Right Side - Tracking Result */}
+          <Grid.Col span={6}>
+            <Card shadow="sm" radius="lg" withBorder className="h-full flex flex-col">
+              <Card.Section withBorder inheritPadding py="md">
+                <Flex align="center" gap="sm">
+                  <ThemeIcon size="md" radius="xl" color="blue" variant="light">
+                    <Icon icon="mdi:truck-delivery" width={16} />
+                  </ThemeIcon>
+                  <Text fw={600}>Status Pengiriman</Text>
+                </Flex>
+              </Card.Section>
+
+              <div className="p-4 flex-1">
+                {renderTrackingResult()}
+              </div>
+            </Card>
+          </Grid.Col>
+        </Grid>
+      </Container>
+
+      <style jsx>{`
+        @keyframes scan {
+          0%, 100% {
+            top: 0%;
+          }
+          50% {
+            top: 100%;
+          }
+        }
+        .animate-scan {
+          animation: scan 2s ease-in-out infinite;
+        }
+      `}</style>
+    </div>
+  );
+}

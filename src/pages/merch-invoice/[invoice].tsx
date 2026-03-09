@@ -1900,6 +1900,819 @@
 
 // TES KODE YANG DIMODIF 
 
+import { Icon } from "@iconify/react/dist/iconify.js";
+import { Box, Button, Card, Container, Divider, Flex, Image, Modal, NumberFormatter, SimpleGrid, Stack, Table, Tabs, Text, TextInput, Title, Timeline, Badge, ThemeIcon } from "@mantine/core";
+import Link from "next/link";
+import { InvoiceResponse } from "./type";
+import { useEffect, useMemo, useState } from "react";
+import fetch from "@/utils/fetch";
+import { useListState, useDisclosure } from "@mantine/hooks";
+import { useRouter } from "next/router";
+import { City, Province } from "../dashboard/profile/address";
+
+// Definisikan interface Product
+interface Product {
+  id: number;
+  product_name: string;
+  price: string;
+  admin_fee?: string;
+  fee?: string;
+  admin?: string;
+  adminFee?: string;
+  application_fee?: string;
+  service_fee?: string;
+  product_image?: Array<{ id: number; image_url: string }>;
+}
+
+// Interface untuk response produk dari API dengan pagination
+interface ProductResponse {
+  data: Product[];
+  meta?: {
+    total: number;
+    per_page: number;
+    current_page: number;
+    last_page: number;
+  };
+  current_page?: number;
+  last_page?: number;
+  total?: number;
+}
+
+// Interface untuk tracking status
+interface TrackingStatus {
+  id: number;
+  status_delivery: string;
+  description: string;
+  active_status: number;
+  updated_at: string | null;
+  deleted_at: string | null;
+}
+
+// Interface untuk manifest
+interface Manifest {
+  id: number;
+  tracking_status_id: number;
+  order_id: number;
+  order_courier_id: number;
+  tracking_number: string;
+  status_name: string;
+  description: string;
+  location: string;
+  image: string | null;
+  courier_time: string | null;
+  pic_name: string;
+  created_by: string | null;
+  created_at: string;
+  deleted_at: string | null;
+  tracking_status: TrackingStatus;
+}
+
+// Update InvoiceResponse type untuk menyertakan manifest
+interface InvoiceResponseWithManifest extends InvoiceResponse {
+  manifest?: Manifest[];
+}
+
+// Interface untuk tracking data yang akan ditampilkan di Timeline
+interface TrackingEvent {
+  status: string;
+  description: string;
+  time: string;
+  location?: string;
+  isActive?: boolean;
+  isCompleted?: boolean;
+}
+
+export default function Invoice() {
+  const [isClient, setIsClient] = useState(false);
+  const [data, setData] = useState<InvoiceResponseWithManifest>();
+  const [products, setProducts] = useState<Map<number, Product>>(new Map());
+  const [loading, setLoading] = useListState<string>();
+  const [loadingDownload, setLoadingDownload] = useState(false);
+  const router = useRouter();
+  const { invoice } = router.query;
+  const [city, setCity] = useState<City>();
+  const [province, setProvince] = useState<Province>();
+  
+  // State untuk tracking
+  const [activeTab, setActiveTab] = useState<string | null>('invoice');
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    getData();
+  }, [isClient, invoice]);
+
+  useEffect(() => {
+    if (data?.detail) {
+      fetchAllProductsPaginated();
+    }
+  }, [data]);
+
+  useEffect(() => {
+    getProvinceCity();
+  }, [data]);
+
+  const fetchAllProductsPaginated = async () => {
+    try {
+      setLoading.append("fetchProducts");
+      
+      const productsMap = new Map<number, Product>();
+      let currentPage = 1;
+      let lastPage = 1;
+      let hasMorePages = true;
+      
+      // Dapatkan semua product IDs yang perlu di-fetch
+      const neededProductIds = new Set(data?.detail.map(item => item.product_id) || []);
+      
+      // Loop untuk mengambil semua halaman
+      while (hasMorePages) {
+        await fetch<any, ProductResponse>({
+          url: `product?page=${currentPage}`,
+          method: "GET",
+          success: ({ data: responseData }) => {
+            let productsData: Product[] = [];
+            
+            if (responseData?.data && Array.isArray(responseData.data)) {
+              productsData = responseData.data;
+              lastPage = responseData.meta?.last_page || responseData.last_page || 1;
+              
+              if (currentPage >= lastPage) {
+                hasMorePages = false;
+              } else {
+                currentPage++;
+              }
+            } else if (Array.isArray(responseData)) {
+              productsData = responseData;
+              if (productsData.length === 0) {
+                hasMorePages = false;
+              } else {
+                currentPage++;
+              }
+            } else {
+              hasMorePages = false;
+            }
+            
+            productsData.forEach((product: Product) => {
+              if (product?.id) {
+                productsMap.set(product.id, product);
+              }
+            });
+          },
+          error: (error) => {
+            console.error(`Error fetching page ${currentPage}:`, error);
+            hasMorePages = false;
+          }
+        });
+      }
+      
+      setProducts(productsMap);
+      
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading.filter((e) => e != "fetchProducts");
+    }
+  };
+
+  const getProvinceCity = async () => {
+    if (!data?.address?.city_id || !data?.address?.province_id) return;
+
+    await fetch<any, City>({
+      url: `city/${data.address.city_id}`,
+      method: "GET",
+      success: ({ data: cityData }) => cityData && setCity(cityData),
+    });
+
+    await fetch<any, Province>({
+      url: `province/${data.address.province_id}`,
+      method: "GET",
+      success: ({ data: provinceData }) => provinceData && setProvince(provinceData),
+    });
+  };
+
+  const getData = async () => {
+    if (invoice) {
+      await fetch<any, InvoiceResponseWithManifest>({
+        url: `order-product-invoice/${invoice}`,
+        method: "GET",
+        data: {},
+        before: () => setLoading.append("getdata"),
+        success: ({ data }) => {
+          if (data) {
+            console.log("Data invoice with manifest:", data);
+            setData(data);
+          }
+        },
+        complete: () => setLoading.filter((e) => e != "getdata"),
+        error: () => {},
+      });
+    }
+  };
+
+  const handleDownloadInvoice = async () => {
+    if (!invoice) return;
+    
+    setLoadingDownload(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_WS_URL;
+      
+      if (!apiUrl) {
+        console.error('NEXT_PUBLIC_WS_URL is not defined');
+        return;
+      }
+
+      const baseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+      
+      let downloadUrl;
+      if (baseUrl.endsWith('/api')) {
+        downloadUrl = `${baseUrl}/order-product/download/${invoice}`;
+      } else if (baseUrl.endsWith('/api/')) {
+        downloadUrl = `${baseUrl}order-product/download/${invoice}`;
+      } else {
+        downloadUrl = `${baseUrl}/api/order-product/download/${invoice}`;
+      }
+      
+      window.open(downloadUrl, '_blank');
+    } catch (error) {
+      console.error('Error downloading invoice:', error);
+    } finally {
+      setLoadingDownload(false);
+    }
+  };
+
+  const iconStatus: { [key: string]: string } = {
+    expired: "ooui:alert",
+    pending: "icon-park-solid:time",
+    verified: "uiw:circle-check",
+  };
+
+  // Hitung biaya kurir - ambil dari delivery_price
+  const courierPrice = useMemo(() => {
+    if (data?.delivery_price) {
+      const price = parseInt(data.delivery_price.toString());
+      return isNaN(price) ? 0 : price;
+    }
+    return 0;
+  }, [data]);
+
+  // Hitung total harga produk dari data.total_price
+  const totalProductPrice = useMemo(() => {
+    return data?.total_price || 0;
+  }, [data]);
+
+  // Admin fee diambil dari level invoice (flat untuk seluruh invoice)
+  const adminFee = useMemo(() => {
+    if (data?.admin_fee) {
+      return data.admin_fee;
+    }
+    return 0;
+  }, [data]);
+
+  // Grand total = data.grandtotal
+  const grandTotal = useMemo(() => {
+    return data?.grandtotal || 0;
+  }, [data]);
+
+  // Format ETD dari data courier
+  const estimatedDelivery = useMemo(() => {
+    if (data?.courier?.etd) {
+      return data.courier.etd;
+    }
+    return "4 - 4 Mar 2026"; // Default jika tidak ada ETD
+  }, [data]);
+
+  // Format ETD time dari data courier
+  const estimatedDeliveryTime = useMemo(() => {
+    if (data?.courier?.etd_time) {
+      return data.courier.etd_time;
+    }
+    return null;
+  }, [data]);
+
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return "-";
+
+    const date = new Date(dateString);
+    const hours = date.getUTCHours().toString().padStart(2, "0");
+    const minutes = date.getUTCMinutes().toString().padStart(2, "0");
+    const day = date.getUTCDate().toString().padStart(2, "0");
+    const month = date.getUTCMonth();
+    const year = date.getUTCFullYear();
+    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+    return `${hours}:${minutes}, ${day} ${monthNames[month]} ${year}`;
+  };
+
+  const formatDateManifest = (dateString?: string): string => {
+    if (!dateString) return "-";
+
+    const date = new Date(dateString);
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = date.getMonth();
+    const year = date.getFullYear();
+    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+    return `${hours}:${minutes}, ${day} ${monthNames[month]} ${year}`;
+  };
+
+  // Konversi manifest ke tracking events untuk timeline
+  const trackingEvents = useMemo<TrackingEvent[]>(() => {
+    const manifestData = data?.manifest;
+    console.log("useMemo trackingEvents - manifest:", manifestData);
+    
+    if (!manifestData || manifestData.length === 0) {
+      return [];
+    }
+
+    // Urutkan manifest berdasarkan created_at (ascending)
+    const sortedManifest = [...manifestData].sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+
+    // Konversi ke tracking events
+    return sortedManifest.map((item, index) => ({
+      status: item.tracking_status?.status_delivery || item.status_name,
+      description: item.tracking_status?.description || item.description,
+      time: formatDateManifest(item.created_at),
+      location: item.location,
+      isCompleted: true,
+      isActive: index === sortedManifest.length - 1 // item terakhir adalah yang aktif
+    }));
+  }, [data?.manifest]);
+
+  // Render tracking section - menggunakan data manifest dari response invoice
+  const renderTracking = () => {
+    const manifestData = data?.manifest;
+    console.log("renderTracking - manifest:", manifestData);
+    console.log("renderTracking - trackingEvents:", trackingEvents);
+    
+    // Jika manifest undefined atau array kosong, tampilkan pesan
+    if (!manifestData || manifestData.length === 0) {
+      return (
+        <Stack gap="lg" w="100%" style={{ alignItems: 'center' }} py={50}>
+          <Card withBorder w="100%" maw={650} style={{ margin: '0 auto' }} p="xl">
+            <Stack align="center" gap="md">
+              <ThemeIcon size={60} radius="xl" color="gray" variant="light">
+                <Icon icon="mdi:truck-delivery" width={30} />
+              </ThemeIcon>
+              <Text fw={600} size="lg" ta="center">Belum Ada Informasi Pengiriman</Text>
+              <Text size="sm" c="dimmed" ta="center">
+                Status pengiriman akan segera muncul setelah pesanan diproses
+              </Text>
+            </Stack>
+          </Card>
+        </Stack>
+      );
+    }
+
+    // Ambil tracking number dari manifest pertama
+    const trackingNumber = manifestData[0].tracking_number;
+
+    return (
+      <Stack gap="lg" w="100%" style={{ alignItems: 'center' }}>
+        {/* Header Card */}
+        <Box w="100%" style={{ display: 'flex', justifyContent: 'center' }}>
+          <Card withBorder bg="blue.0" w="100%" maw={650} style={{ margin: '0 auto' }}>
+            <Flex justify="space-between" align="center" wrap="wrap" gap="md">
+              <Box>
+                <Text size="xs" c="dimmed">Kode Tracking</Text>
+                <Text fw={700} size="xl">{trackingNumber}</Text>
+                {/* <Badge color="green" size="lg" mt="xs">Dalam Pengiriman</Badge> */}
+              </Box>
+              <Box>
+                <Text size="xs" c="dimmed">Estimasi Tiba</Text>
+                <Text fw={600}>{estimatedDelivery}</Text>
+                {estimatedDeliveryTime && (
+                  <Text size="xs" c="dimmed" ta="right">Estimasi jam: {estimatedDeliveryTime}</Text>
+                )}
+              </Box>
+              <Button 
+                variant="light" 
+                color="blue"
+                leftSection={<Icon icon="mdi:map-marker-path" />}
+                component="a"
+                href="#"
+                target="_blank"
+              >
+                Live Tracking
+              </Button>
+            </Flex>
+          </Card>
+        </Box>
+
+        {/* Courier Info Card */}
+        <Box w="100%" style={{ display: 'flex', justifyContent: 'center' }}>
+          <Card withBorder w="100%" maw={650} style={{ margin: '0 auto' }}>
+            <Flex justify="space-between" align="center" wrap="wrap" gap="md">
+              <Flex align="center" gap="md">
+                <ThemeIcon size="xl" radius="md" color="blue" variant="light">
+                  <Icon icon="mdi:truck-fast" width={24} />
+                </ThemeIcon>
+                <Box>
+                  <Text size="sm" c="dimmed">Kurir</Text>
+                  <Text fw={600} className="capitalize">
+                    {data?.courier?.main || "-"} - {data?.courier?.type || "-"}
+                  </Text>
+                  <Text size="xs" c="dimmed">{trackingNumber}</Text>
+                </Box>
+              </Flex>
+              <Button
+                variant="light"
+                color="green"
+                leftSection={<Icon icon="mdi:whatsapp" width={18} />}
+                component="a"
+                href="https://wa.me/6281287728920"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Customer Support
+              </Button>
+            </Flex>
+          </Card>
+        </Box>
+
+        {/* Timeline Card */}
+        <Box w="100%" style={{ display: 'flex', justifyContent: 'center' }}>
+          <Card withBorder w="100%" maw={650} style={{ margin: '0 auto' }}>
+            <Text fw={600} mb="xl" ta="center" size="lg">Status Pengiriman</Text>
+            <Box style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <Box style={{ maxWidth: 500, width: '100%' }}>
+                <Timeline 
+                  active={trackingEvents.findIndex(t => t.isActive)} 
+                  bulletSize={24} 
+                  lineWidth={2}
+                >
+                  {trackingEvents.map((event, index) => (
+                    <Timeline.Item
+                      key={index}
+                      bullet={
+                        <ThemeIcon
+                          size={24}
+                          radius="xl"
+                          color={event.isCompleted ? 'green' : event.isActive ? 'blue' : 'gray'}
+                          variant={event.isCompleted || event.isActive ? 'filled' : 'light'}
+                        >
+                          <Icon 
+                            icon={
+                              event.isCompleted ? 'mdi:check' : 
+                              event.isActive ? 'mdi:truck' : 
+                              'mdi:circle-outline'
+                            } 
+                            width={14} 
+                          />
+                        </ThemeIcon>
+                      }
+                      title={
+                        <Text fw={600} ta="center" c={event.isCompleted ? 'green' : event.isActive ? 'blue' : 'dimmed'}>
+                          {event.status}
+                        </Text>
+                      }
+                    >
+                      <Stack gap={4} align="center">
+                        {event.location && (
+                          <Text size="xs" c="dimmed" ta="center">{event.location}</Text>
+                        )}
+                        <Text size="sm" ta="center">{event.description}</Text>
+                      </Stack>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              </Box>
+            </Box>
+          </Card>
+        </Box>
+
+        {/* Diterima Card - Tampilkan jika status terakhir adalah paket telah terkirim */}
+        {trackingEvents.length > 0 && trackingEvents[trackingEvents.length - 1].status.toLowerCase().includes("terkirim") && (
+          <Box w="100%" style={{ display: 'flex', justifyContent: 'center' }}>
+            <Card withBorder bg="green.0" w="100%" maw={650} style={{ margin: '0 auto' }}>
+              <Flex align="center" gap="md" justify="center" direction="column">
+                <ThemeIcon size="lg" radius="xl" color="green">
+                  <Icon icon="mdi:check" width={20} />
+                </ThemeIcon>
+                <Box>
+                  <Text fw={600} ta="center">Diterima</Text>
+                  <Text size="sm" c="dimmed" ta="center">
+                    Paket telah terkirim. {trackingEvents[trackingEvents.length - 1].time}
+                  </Text>
+                </Box>
+              </Flex>
+            </Card>
+          </Box>
+        )}
+      </Stack>
+    );
+  };
+
+  if (!isClient) {
+    return (
+      <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px]`}>
+        <Container px={0} className={`py-[44px] md:py-[100px]`}>
+          <Card p={0} radius={8} className={`!shadow-lg`}>
+            <Card className={`!bg-gradient-to-bl from-primary-base to-primary-dark !overflow-visible`} p={30} c="white" radius={0}>
+              <Flex justify="center" align="center" h={200}>
+                <Text>Memuat invoice...</Text>
+              </Flex>
+            </Card>
+          </Card>
+        </Container>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px]`}>
+      <Container px={0} className={`py-[44px] md:py-[100px]`}>
+        <Card p={0} radius={8} className={`!shadow-lg`}>
+          <Card className={`!bg-gradient-to-bl from-primary-base to-primary-dark !overflow-visible`} p={30} c="white" radius={0}>
+            <Stack gap={30}>
+              <Flex justify="space-between" align="center" wrap="wrap" gap={20}>
+                <Flex gap={15} align="center">
+                  <Icon icon="iconamoon:invoice-light" className={`text-[48px]`} />
+                  <Stack gap={0}>
+                    <Title order={1} className={`uppercase !text-[20px] md:!text-[1.8rem]`}>
+                      Invoice Pesanan
+                    </Title>
+                    <Text size="sm">{invoice}</Text>
+                  </Stack>
+                </Flex>
+
+                <Stack gap={5} className={`items-start md:!items-end`}>
+                  <Card px={15} py={5} radius={10} withBorder className={`!overflow-visible`}>
+                    <Flex align="center" gap={10}>
+                      <Text size="sm" c="gray.8">
+                        Status Pembayaran :
+                      </Text>
+                      <Flex gap={5} align="center">
+                        <Icon
+                          icon={iconStatus[data?.payment_status?.toLowerCase() ?? "pending"]}
+                          className={`
+                            text-[18px]
+                            ${data?.payment_status?.toLowerCase() == "expired" && "text-red-400"}
+                            ${data?.payment_status?.toLowerCase() == "pending" && "text-yellow-500"}
+                            ${data?.payment_status?.toLowerCase() == "verified" && "text-green-500"}
+                          `}
+                        />
+                        <Text size="md" fw={400}>
+                          {data?.payment_status?.toLowerCase() == "expired" && <>Expired</>}
+                          {data?.payment_status?.toLowerCase() == "pending" && <>Pending</>}
+                          {data?.payment_status?.toLowerCase() == "verified" && <>Berhasil</>}
+                        </Text>
+                      </Flex>
+                    </Flex>
+                  </Card>
+                </Stack>
+              </Flex>
+            </Stack>
+          </Card>
+
+          {/* Tabs Navigation */}
+          <Tabs value={activeTab} onChange={setActiveTab} mt="md">
+            <Tabs.List px="md">
+              <Tabs.Tab value="invoice" leftSection={<Icon icon="mdi:file-document" />}>
+                Detail Invoice
+              </Tabs.Tab>
+              <Tabs.Tab value="tracking" leftSection={<Icon icon="mdi:truck-delivery" />}>
+                Live Status Pengiriman
+              </Tabs.Tab>
+            </Tabs.List>
+
+            <Tabs.Panel value="invoice">
+              <Stack py={25} gap={30} className={`px-[20px] md:!px-[30px]`}>
+                <Flex gap={15} className={`[&>*]:flex-grow`} wrap="wrap-reverse">
+                  <Stack gap={10}>
+                    <Text fw={600} c="gray.8">
+                      Informasi Pemesan
+                    </Text>
+                    <Card withBorder>
+                      <SimpleGrid className={`!grid-cols-1 md:!grid-cols-2 !gap-[15px]`}>
+                        <Stack gap={0}>
+                          <Text size="xs" fw={300}>
+                            Nama Pemesan
+                          </Text>
+                          <Text size="sm" fw={600}>
+                            {data?.address?.nama_penerima || "-"}
+                          </Text>
+                        </Stack>
+                        <Stack gap={0}>
+                          <Text size="xs" fw={300}>
+                            Kurir yang Dipilih
+                          </Text>
+                          <Text size="sm" className="capitalize">
+                            {data?.courier?.main || "-"} - {data?.courier?.type || "-"}
+                          </Text>
+                        </Stack>
+                        <Stack gap={0}>
+                          <Text size="xs" fw={300}>
+                            Tanggal Pesanan Dibuat
+                          </Text>
+                          <Text size="sm" suppressHydrationWarning>
+                            {formatDate(data?.created_at)}
+                          </Text>
+                        </Stack>
+                      </SimpleGrid>
+                    </Card>
+                  </Stack>
+
+                  <Stack gap={10} className={`md:max-w-[300px]`}>
+                    <Text fw={600} c="gray.8">
+                      Total Pembayaran
+                    </Text>
+                    <Card bg="gray.1">
+                      <SimpleGrid className={`!grid-cols-1 md:!grid-cols-1 !gap-[10px]`}>
+                        <Text size="xl" fw={600}>
+                          <NumberFormatter value={grandTotal} thousandSeparator="." decimalSeparator="," prefix="Rp " />
+                        </Text>
+                        <Stack gap={0}>
+                          <Text size="xs" fw={300}>
+                            Metode Pembayaran
+                          </Text>
+                          <Text size="sm" className="capitalize">
+                            {data?.payment_method || "-"}
+                          </Text>
+                        </Stack>
+                        <Button
+                          variant="light"
+                          color="blue"
+                          leftSection={<Icon icon="mdi:file-download-outline" />}
+                          onClick={handleDownloadInvoice}
+                          loading={loadingDownload}
+                          size="sm"
+                          fullWidth
+                          disabled={!invoice}
+                        >
+                          Download Invoice Merch
+                        </Button>
+                        {data?.xendit_url && (
+                          <Link href={data.xendit_url} target="_blank">
+                            <Button
+                              variant="light"
+                              color="green"
+                              leftSection={<Icon icon="mdi:external-link" />}
+                              size="sm"
+                              fullWidth
+                            >
+                              Buka Halaman Pembayaran
+                            </Button>
+                          </Link>
+                        )}
+                      </SimpleGrid>
+                    </Card>
+                  </Stack>
+                </Flex>
+
+                <Flex gap={15} className={`[&>*]:flex-grow`} wrap="wrap">
+                  <Stack gap={10}>
+                    <Text fw={600} c="gray.8">
+                      Informasi Pengiriman
+                    </Text>
+                    <Card withBorder>
+                      <SimpleGrid className={`!grid-cols-1 md:!grid-cols-2 !gap-[15px]`}>
+                        <Stack gap={0}>
+                          <Text size="xs" fw={300}>
+                            Nama Penerima
+                          </Text>
+                          <Text size="sm" fw={600}>
+                            {data?.address?.nama_penerima || "-"}
+                          </Text>
+                        </Stack>
+                        <Stack gap={0}>
+                          <Text size="xs" fw={300}>
+                            No. Telp Penerima
+                          </Text>
+                          <Text size="sm">{data?.address?.phone || "-"}</Text>
+                        </Stack>
+                        <Stack gap={0}>
+                          <Text size="xs" fw={300} mb={5}>
+                            Alamat Pengiriman
+                          </Text>
+                          <Text size="xs">
+                            {province?.name || "-"}, {city?.name || "-"}, {data?.address?.zipcode || "-"}
+                          </Text>
+                          <Text size="xs">{data?.address?.address_detail || "-"}</Text>
+                        </Stack>
+                      </SimpleGrid>
+                    </Card>
+                  </Stack>
+                </Flex>
+
+                <Flex gap={15} className={`[&>*]:flex-grow`} wrap="wrap">
+                  <Stack gap={10} className={`[&_*]:!text-[14px]`}>
+                    <Text fw={600} c="gray.8">
+                      Detail Pesanan
+                    </Text>
+                    
+                    <Box maw="calc(100vw - 40px)" className={`overflow-auto`}>
+                      <Table withRowBorders={false} horizontalSpacing="md" miw={500}>
+                        <Table.Thead>
+                          <Table.Tr>
+                            <Table.Th>No</Table.Th>
+                            <Table.Th>Produk</Table.Th>
+                            <Table.Th>Qty</Table.Th>
+                            <Table.Th>Harga</Table.Th>
+                          </Table.Tr>
+                        </Table.Thead>
+                        <Table.Tbody>
+                          {data?.detail?.map((e, i) => {
+                            // Ambil harga dari detail item (response invoice)
+                            const price = parseInt(e.price || "0");
+                            const qty = e.qty || 0;
+                            // Hitung total harga per item (qty × harga satuan)
+                            const totalPrice = price * qty;
+                            
+                            return (
+                              <Table.Tr key={i}>
+                                <Table.Td>{i + 1}</Table.Td>
+                                <Table.Td>
+                                  <Flex gap={15} className={`!py-[5px]`}>
+                                    <Image 
+                                      src={e.product?.product_image?.[0]?.image_url || "#"} 
+                                      w={48} 
+                                      h={48} 
+                                      bg="gray.1" 
+                                      radius={5} 
+                                      className={`shrink-0`} 
+                                    />
+                                    <Stack gap={0}>
+                                      <Text>{e.product?.product_name || "-"}</Text>
+                                      {Boolean(e.product_varian_id) && (
+                                        <Text size="sm" c="gray.7">
+                                          Varian: {e.variant?.varian_name || "-"}
+                                        </Text>
+                                      )}
+                                      {e.order_notes && (
+                                        <Text size="xs" c="dimmed" fs="italic" mt={4}>
+                                          Catatan: {e.order_notes}
+                                        </Text>
+                                      )}
+                                    </Stack>
+                                  </Flex>
+                                </Table.Td>
+                                <Table.Td>{qty}</Table.Td>
+                                <Table.Td>
+                                  <NumberFormatter value={totalPrice} thousandSeparator="." decimalSeparator="," prefix="Rp " />
+                                </Table.Td>
+                              </Table.Tr>
+                            );
+                          })}
+                        </Table.Tbody>
+                      </Table>
+                    </Box>
+
+                    {/* Summary Card dengan Biaya Kurir */}
+                    <Card withBorder mt="md" bg="gray.0">
+                      <Stack gap="xs">
+                        <Flex justify="space-between">
+                          <Text fw={500}>Subtotal Produk:</Text>
+                          <Text fw={500}>
+                            <NumberFormatter value={totalProductPrice} thousandSeparator="." decimalSeparator="," prefix="Rp " />
+                          </Text>
+                        </Flex>
+                        <Flex justify="space-between">
+                          <Text fw={500}>Biaya Admin:</Text>
+                          <Text fw={500}>
+                            <NumberFormatter value={adminFee} thousandSeparator="." decimalSeparator="," prefix="Rp " />
+                          </Text>
+                        </Flex>
+                        <Flex justify="space-between">
+                          <Text fw={500}>Biaya Pengiriman ({data?.courier?.main || "-"} - {data?.courier?.type || "-"}):</Text>
+                          <Text fw={500}>
+                            <NumberFormatter value={courierPrice} thousandSeparator="." decimalSeparator="," prefix="Rp " />
+                          </Text>
+                        </Flex>
+                        <Divider my="xs" />
+                        <Flex justify="space-between">
+                          <Text fw={700} size="lg">Total Pembayaran:</Text>
+                          <Text fw={700} size="lg" c="blue">
+                            <NumberFormatter value={grandTotal} thousandSeparator="." decimalSeparator="," prefix="Rp " />
+                          </Text>
+                        </Flex>
+                      </Stack>
+                    </Card>
+                  </Stack>
+                </Flex>
+              </Stack>
+            </Tabs.Panel>
+
+            <Tabs.Panel value="tracking">
+              <Box py={25} style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                <Box style={{ maxWidth: 750, width: '100%', margin: '0 auto' }} className={`px-[20px] md:!px-[30px]`}>
+                  {renderTracking()}
+                </Box>
+              </Box>
+            </Tabs.Panel>
+          </Tabs>
+        </Card>
+      </Container>
+    </div>
+  );
+}
+
+// INI UNTUK PUSH SEMENTARA
 // import { Icon } from "@iconify/react/dist/iconify.js";
 // import { Box, Button, Card, Container, Divider, Flex, Image, Modal, NumberFormatter, SimpleGrid, Stack, Table, Tabs, Text, TextInput, Title, Timeline, Badge, ThemeIcon } from "@mantine/core";
 // import Link from "next/link";
@@ -1938,16 +2751,6 @@
 //   total?: number;
 // }
 
-// // Interface untuk tracking data
-// interface TrackingEvent {
-//   status: string;
-//   description: string;
-//   time: string;
-//   icon?: string;
-//   isActive?: boolean;
-//   isCompleted?: boolean;
-// }
-
 // export default function Invoice() {
 //   const [isClient, setIsClient] = useState(false);
 //   const [data, setData] = useState<InvoiceResponse>();
@@ -1959,56 +2762,8 @@
 //   const [city, setCity] = useState<City>();
 //   const [province, setProvince] = useState<Province>();
   
-//   // State untuk tracking
+//   // State untuk tabs
 //   const [activeTab, setActiveTab] = useState<string | null>('invoice');
-//   const [trackingCode, setTrackingCode] = useState('');
-//   const [isTrackingVerified, setIsTrackingVerified] = useState(false);
-//   const [scanError, setScanError] = useState('');
-//   const [opened, { open, close }] = useDisclosure(false);
-//   const [trackingData, setTrackingData] = useState<TrackingEvent[]>([
-//     {
-//       status: "Paket telah terkirim",
-//       description: "Paket telah terkirim.",
-//       time: "Selasa, 3 Mar 2026 • 18:04 WIB",
-//       isCompleted: true,
-//       isActive: false
-//     },
-//     {
-//       status: "Sedang dalam pengiriman",
-//       description: "Paket sedang diantar.",
-//       time: "Selasa, 3 Mar 2026 • 17:27 WIB",
-//       isCompleted: true,
-//       isActive: false
-//     },
-//     {
-//       status: "Paket sudah di pick-up",
-//       description: "Paket di-pick-up driver.",
-//       time: "Selasa, 3 Mar 2026 • 17:27 WIB",
-//       isCompleted: true,
-//       isActive: false
-//     },
-//     {
-//       status: "Menyiapkan pengiriman",
-//       description: "Driver sedang mem-pick-up paket Anda.",
-//       time: "Selasa, 3 Mar 2026 • 16:58 WIB",
-//       isCompleted: true,
-//       isActive: false
-//     },
-//     {
-//       status: "Berhasil mendapatkan driver",
-//       description: "Berhasil mendapatkan driver.",
-//       time: "Selasa, 3 Mar 2026 • 16:56 WIB",
-//       isCompleted: true,
-//       isActive: true
-//     },
-//     {
-//       status: "Siap untuk dikirim",
-//       description: "Paket siap untuk dikirim.",
-//       time: "Selasa, 3 Mar 2026 • 16:30 WIB",
-//       isCompleted: false,
-//       isActive: false
-//     }
-//   ]);
 
 //   useEffect(() => {
 //     setIsClient(true);
@@ -2187,24 +2942,6 @@
 //     }
 //   };
 
-//   // Handle verifikasi tracking
-//   const handleVerifyTracking = () => {
-//     // Simulasi verifikasi kode tracking
-//     // Dalam implementasi nyata, ini akan memanggil API untuk validasi
-//     if (trackingCode === 'GK-11-861316716' || trackingCode === 'demo' || trackingCode === 'GK-11') {
-//       setIsTrackingVerified(true);
-//       setScanError('');
-//     } else {
-//       setScanError('Kode tracking tidak valid. Silakan coba lagi.');
-//     }
-//   };
-
-//   // Handle input kode tracking manual
-//   const handleManualCode = () => {
-//     // Contoh kode tracking dari gambar
-//     setTrackingCode('GK-11-861316716');
-//   };
-
 //   const iconStatus: { [key: string]: string } = {
 //     expired: "ooui:alert",
 //     pending: "icon-park-solid:time",
@@ -2262,195 +2999,6 @@
 //     const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
 //     return `${hours}:${minutes}, ${day} ${monthNames[month]} ${year}`;
-//   };
-
-//   // Render tracking section
-//   const renderTracking = () => {
-//     if (!isTrackingVerified) {
-//       return (
-//         <Stack gap="md" py="xl" px="md" align="center">
-//           <Icon icon="mdi:truck-delivery" width={80} height={80} className="text-gray-400" />
-//           <Title order={3} ta="center">Lacak Pengiriman</Title>
-//           <Text c="dimmed" ta="center" size="sm" maw={400}>
-//             Masukkan kode tracking untuk melihat status pengiriman paket Anda
-//           </Text>
-          
-//           <Card withBorder w="100%" maw={400} mt="md">
-//             <Stack gap="md">
-//               <TextInput
-//                 label="Kode Tracking"
-//                 placeholder="Contoh: GK-11-861316716"
-//                 value={trackingCode}
-//                 onChange={(e) => setTrackingCode(e.target.value)}
-//                 error={scanError}
-//                 description="Masukkan kode tracking yang tertera pada resi"
-//               />
-              
-//               <Flex gap="sm">
-//                 <Button 
-//                   variant="light" 
-//                   fullWidth
-//                   onClick={handleVerifyTracking}
-//                   leftSection={<Icon icon="mdi:check" />}
-//                 >
-//                   Verifikasi
-//                 </Button>
-//               </Flex>
-              
-//               <Divider label="atau" labelPosition="center" />
-              
-//               <Button 
-//                 variant="outline" 
-//                 fullWidth
-//                 onClick={handleManualCode}
-//                 leftSection={<Icon icon="mdi:file-document-outline" />}
-//               >
-//                 Gunakan Contoh Kode (Demo)
-//               </Button>
-              
-//               <Text size="xs" c="dimmed" ta="center">
-//                 Untuk demo, gunakan kode: GK-11-861316716 atau GK-11
-//               </Text>
-//             </Stack>
-//           </Card>
-//         </Stack>
-//       );
-//     }
-
-//     // Tracking info header - Menggunakan data dari gambar
-//     return (
-//       <Stack gap="lg">
-//         <Card withBorder bg="blue.0">
-//           <Flex justify="space-between" align="center" wrap="wrap" gap="md">
-//             <Box>
-//               <Text size="xs" c="dimmed">Kode Tracking</Text>
-//               <Text fw={700} size="xl">GK-11-861316716</Text>
-//               <Badge color="green" size="lg" mt="xs">Dalam Pengiriman</Badge>
-//             </Box>
-//             <Box>
-//               <Text size="xs" c="dimmed">Estimasi Tiba</Text>
-//               <Text fw={600}>4 - 4 Mar 2026</Text>
-//             </Box>
-//             <Button 
-//               variant="light" 
-//               color="blue"
-//               leftSection={<Icon icon="mdi:map-marker-path" />}
-//               component="a"
-//               href="#"
-//               target="_blank"
-//             >
-//               Live Tracking
-//             </Button>
-//           </Flex>
-//         </Card>
-
-//         {/* Courier Info - Dari gambar */}
-//         <Card withBorder>
-//           <Flex justify="space-between" align="center" wrap="wrap" gap="md">
-//             <Flex align="center" gap="md">
-//               <ThemeIcon size="xl" radius="md" color="blue" variant="light">
-//                 <Icon icon="mdi:truck-fast" width={24} />
-//               </ThemeIcon>
-//               <Box>
-//                 <Text size="sm" c="dimmed">Kurir</Text>
-//                 <Text fw={600}>GoSend - GKS</Text>
-//                 <Text size="xs" c="dimmed">GK-11-861316716</Text>
-//               </Box>
-//             </Flex>
-//             <Box>
-//               <Text size="sm" c="dimmed">Kurir</Text>
-//               <Text fw={600}>MOHAMMAD IMAM MALIK</Text>
-//               <Flex align="center" gap="xs" mt={4}>
-//                 <Icon icon="mdi:phone" width={16} />
-//                 <Text size="sm" component="a" href="tel:+6283872984224">
-//                   +6283872984224
-//                 </Text>
-//               </Flex>
-//             </Box>
-//             <Flex gap="xs">
-//               <Button 
-//                 variant="subtle" 
-//                 size="sm"
-//                 leftSection={<Icon icon="mdi:chat" />}
-//               >
-//                 Chat
-//               </Button>
-//               <Button 
-//                 variant="subtle" 
-//                 size="sm"
-//                 leftSection={<Icon icon="mdi:phone" />}
-//               >
-//                 Hubungi
-//               </Button>
-//             </Flex>
-//           </Flex>
-//         </Card>
-
-//         {/* Tracking Timeline - Sesuai gambar */}
-//         <Card withBorder>
-//           <Text fw={600} mb="md">Status Pengiriman</Text>
-//           <Timeline active={trackingData.findIndex(t => t.isActive)} bulletSize={24} lineWidth={2}>
-//             {trackingData.map((event, index) => (
-//               <Timeline.Item
-//                 key={index}
-//                 bullet={
-//                   <ThemeIcon
-//                     size={24}
-//                     radius="xl"
-//                     color={event.isCompleted ? 'green' : event.isActive ? 'blue' : 'gray'}
-//                     variant={event.isCompleted || event.isActive ? 'filled' : 'light'}
-//                   >
-//                     <Icon 
-//                       icon={
-//                         event.isCompleted ? 'mdi:check' : 
-//                         event.isActive ? 'mdi:truck' : 
-//                         'mdi:circle-outline'
-//                       } 
-//                       width={14} 
-//                     />
-//                   </ThemeIcon>
-//                 }
-//                 title={
-//                   <Text fw={600} c={event.isCompleted ? 'green' : event.isActive ? 'blue' : 'dimmed'}>
-//                     {event.status}
-//                   </Text>
-//                 }
-//               >
-//                 <Text size="sm" c="dimmed" mt={4}>{event.time}</Text>
-//                 <Text size="sm">{event.description}</Text>
-//               </Timeline.Item>
-//             ))}
-//           </Timeline>
-//         </Card>
-
-//         {/* Diterima status - Dari gambar */}
-//         <Card withBorder bg="green.0">
-//           <Flex align="center" gap="md">
-//             <ThemeIcon size="lg" radius="xl" color="green">
-//               <Icon icon="mdi:check" width={20} />
-//             </ThemeIcon>
-//             <Box>
-//               <Text fw={600}>Diterima</Text>
-//               <Text size="sm" c="dimmed">Paket telah terkirim. Selasa, 3 Mar 2026 • 18:04 WIB</Text>
-//             </Box>
-//           </Flex>
-//         </Card>
-
-//         {/* Reset button */}
-//         <Button 
-//           variant="subtle" 
-//           color="gray"
-//           onClick={() => {
-//             setIsTrackingVerified(false);
-//             setTrackingCode('');
-//           }}
-//           leftSection={<Icon icon="mdi:arrow-left" />}
-//           fullWidth
-//         >
-//           Kembali ke Verifikasi
-//         </Button>
-//       </Stack>
-//     );
 //   };
 
 //   if (!isClient) {
@@ -2515,822 +3063,227 @@
 //             </Stack>
 //           </Card>
 
-//           {/* Tabs Navigation */}
-//           <Tabs value={activeTab} onChange={setActiveTab} mt="md">
-//             <Tabs.List px="md">
-//               <Tabs.Tab value="invoice" leftSection={<Icon icon="mdi:file-document" />}>
-//                 Detail Invoice
-//               </Tabs.Tab>
-//               <Tabs.Tab value="tracking" leftSection={<Icon icon="mdi:truck-delivery" />}>
-//                 Tracking Pengiriman
-//               </Tabs.Tab>
-//             </Tabs.List>
+//           {/* Hanya menampilkan panel invoice, tanpa tabs tracking */}
+//           <Stack py={25} gap={30} className={`px-[20px] md:!px-[30px]`}>
+//             <Flex gap={15} className={`[&>*]:flex-grow`} wrap="wrap-reverse">
+//               <Stack gap={10}>
+//                 <Text fw={600} c="gray.8">
+//                   Informasi Pemesan
+//                 </Text>
+//                 <Card withBorder>
+//                   <SimpleGrid className={`!grid-cols-1 md:!grid-cols-2 !gap-[15px]`}>
+//                     <Stack gap={0}>
+//                       <Text size="xs" fw={300}>
+//                         Nama Pemesan
+//                       </Text>
+//                       <Text size="sm" fw={600}>
+//                         {data?.address?.nama_penerima || "-"}
+//                       </Text>
+//                     </Stack>
+//                     <Stack gap={0}>
+//                       <Text size="xs" fw={300}>
+//                         Kurir yang Dipilih
+//                       </Text>
+//                       <Text size="sm" className="capitalize">
+//                         {data?.courier?.main || "-"} - {data?.courier?.type || "-"}
+//                       </Text>
+//                     </Stack>
+//                     <Stack gap={0}>
+//                       <Text size="xs" fw={300}>
+//                         Tanggal Pesanan Dibuat
+//                       </Text>
+//                       <Text size="sm" suppressHydrationWarning>
+//                         {formatDate(data?.created_at)}
+//                       </Text>
+//                     </Stack>
+//                   </SimpleGrid>
+//                 </Card>
+//               </Stack>
 
-//             <Tabs.Panel value="invoice">
-//               <Stack py={25} gap={30} className={`px-[20px] md:!px-[30px]`}>
-//                 <Flex gap={15} className={`[&>*]:flex-grow`} wrap="wrap-reverse">
-//                   <Stack gap={10}>
-//                     <Text fw={600} c="gray.8">
-//                       Informasi Pemesan
+//               <Stack gap={10} className={`md:max-w-[300px]`}>
+//                 <Text fw={600} c="gray.8">
+//                   Total Pembayaran
+//                 </Text>
+//                 <Card bg="gray.1">
+//                   <SimpleGrid className={`!grid-cols-1 md:!grid-cols-1 !gap-[10px]`}>
+//                     <Text size="xl" fw={600}>
+//                       <NumberFormatter value={grandTotal} thousandSeparator="." decimalSeparator="," prefix="Rp " />
 //                     </Text>
-//                     <Card withBorder>
-//                       <SimpleGrid className={`!grid-cols-1 md:!grid-cols-2 !gap-[15px]`}>
-//                         <Stack gap={0}>
-//                           <Text size="xs" fw={300}>
-//                             Nama Pemesan
-//                           </Text>
-//                           <Text size="sm" fw={600}>
-//                             {data?.address?.nama_penerima || "-"}
-//                           </Text>
-//                         </Stack>
-//                         <Stack gap={0}>
-//                           <Text size="xs" fw={300}>
-//                             Kurir yang Dipilih
-//                           </Text>
-//                           <Text size="sm" className="capitalize">
-//                             {data?.courier?.main || "-"} - {data?.courier?.type || "-"}
-//                           </Text>
-//                         </Stack>
-//                         <Stack gap={0}>
-//                           <Text size="xs" fw={300}>
-//                             Tanggal Pesanan Dibuat
-//                           </Text>
-//                           <Text size="sm" suppressHydrationWarning>
-//                             {formatDate(data?.created_at)}
-//                           </Text>
-//                         </Stack>
-//                       </SimpleGrid>
-//                     </Card>
-//                   </Stack>
-
-//                   <Stack gap={10} className={`md:max-w-[300px]`}>
-//                     <Text fw={600} c="gray.8">
-//                       Total Pembayaran
-//                     </Text>
-//                     <Card bg="gray.1">
-//                       <SimpleGrid className={`!grid-cols-1 md:!grid-cols-1 !gap-[10px]`}>
-//                         <Text size="xl" fw={600}>
-//                           <NumberFormatter value={grandTotal} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-//                         </Text>
-//                         <Stack gap={0}>
-//                           <Text size="xs" fw={300}>
-//                             Metode Pembayaran
-//                           </Text>
-//                           <Text size="sm" className="capitalize">
-//                             {data?.payment_method || "-"}
-//                           </Text>
-//                         </Stack>
+//                     <Stack gap={0}>
+//                       <Text size="xs" fw={300}>
+//                         Metode Pembayaran
+//                       </Text>
+//                       <Text size="sm" className="capitalize">
+//                         {data?.payment_method || "-"}
+//                       </Text>
+//                     </Stack>
+//                     <Button
+//                       variant="light"
+//                       color="blue"
+//                       leftSection={<Icon icon="mdi:file-download-outline" />}
+//                       onClick={handleDownloadInvoice}
+//                       loading={loadingDownload}
+//                       size="sm"
+//                       fullWidth
+//                       disabled={!invoice}
+//                     >
+//                       Download Invoice Merch
+//                     </Button>
+//                     {data?.xendit_url && (
+//                       <Link href={data.xendit_url} target="_blank">
 //                         <Button
 //                           variant="light"
-//                           color="blue"
-//                           leftSection={<Icon icon="mdi:file-download-outline" />}
-//                           onClick={handleDownloadInvoice}
-//                           loading={loadingDownload}
+//                           color="green"
+//                           leftSection={<Icon icon="mdi:external-link" />}
 //                           size="sm"
 //                           fullWidth
-//                           disabled={!invoice}
 //                         >
-//                           Download Invoice Merch
+//                           Buka Halaman Pembayaran
 //                         </Button>
-//                         {data?.xendit_url && (
-//                           <Link href={data.xendit_url} target="_blank">
-//                             <Button
-//                               variant="light"
-//                               color="green"
-//                               leftSection={<Icon icon="mdi:external-link" />}
-//                               size="sm"
-//                               fullWidth
-//                             >
-//                               Buka Halaman Pembayaran
-//                             </Button>
-//                           </Link>
-//                         )}
-//                       </SimpleGrid>
-//                     </Card>
-//                   </Stack>
-//                 </Flex>
-
-//                 <Flex gap={15} className={`[&>*]:flex-grow`} wrap="wrap">
-//                   <Stack gap={10}>
-//                     <Text fw={600} c="gray.8">
-//                       Informasi Pengiriman
-//                     </Text>
-//                     <Card withBorder>
-//                       <SimpleGrid className={`!grid-cols-1 md:!grid-cols-2 !gap-[15px]`}>
-//                         <Stack gap={0}>
-//                           <Text size="xs" fw={300}>
-//                             Nama Penerima
-//                           </Text>
-//                           <Text size="sm" fw={600}>
-//                             {data?.address?.nama_penerima || "-"}
-//                           </Text>
-//                         </Stack>
-//                         <Stack gap={0}>
-//                           <Text size="xs" fw={300}>
-//                             No. Telp Penerima
-//                           </Text>
-//                           <Text size="sm">{data?.address?.phone || "-"}</Text>
-//                         </Stack>
-//                         <Stack gap={0}>
-//                           <Text size="xs" fw={300} mb={5}>
-//                             Alamat Pengiriman
-//                           </Text>
-//                           <Text size="xs">
-//                             {province?.name || "-"}, {city?.name || "-"}, {data?.address?.zipcode || "-"}
-//                           </Text>
-//                           <Text size="xs">{data?.address?.address_detail || "-"}</Text>
-//                         </Stack>
-//                       </SimpleGrid>
-//                     </Card>
-//                   </Stack>
-//                 </Flex>
-
-//                 <Flex gap={15} className={`[&>*]:flex-grow`} wrap="wrap">
-//                   <Stack gap={10} className={`[&_*]:!text-[14px]`}>
-//                     <Text fw={600} c="gray.8">
-//                       Detail Pesanan
-//                     </Text>
-                    
-//                     <Box maw="calc(100vw - 40px)" className={`overflow-auto`}>
-//                       <Table withRowBorders={false} horizontalSpacing="md" miw={600}>
-//                         <Table.Thead>
-//                           <Table.Tr>
-//                             <Table.Th>No</Table.Th>
-//                             <Table.Th>Produk</Table.Th>
-//                             <Table.Th>Qty</Table.Th>
-//                             <Table.Th>Harga Satuan</Table.Th>
-//                             <Table.Th>Subtotal</Table.Th>
-//                           </Table.Tr>
-//                         </Table.Thead>
-//                         <Table.Tbody>
-//                           {data?.detail?.map((e, i) => {
-//                             // Ambil harga dari detail item (response invoice)
-//                             const price = parseInt(e.price || "0");
-//                             const qty = e.qty || 0;
-//                             const subtotal = price * qty;
-                            
-//                             return (
-//                               <Table.Tr key={i}>
-//                                 <Table.Td>{i + 1}</Table.Td>
-//                                 <Table.Td>
-//                                   <Flex gap={15} className={`!py-[5px]`}>
-//                                     <Image 
-//                                       src={e.product?.product_image?.[0]?.image_url || "#"} 
-//                                       w={48} 
-//                                       h={48} 
-//                                       bg="gray.1" 
-//                                       radius={5} 
-//                                       className={`shrink-0`} 
-//                                     />
-//                                     <Stack gap={0}>
-//                                       <Text>{e.product?.product_name || "-"}</Text>
-//                                       {Boolean(e.product_varian_id) && (
-//                                         <Text size="sm" c="gray.7">
-//                                           Varian: {e.variant?.varian_name || "-"}
-//                                         </Text>
-//                                       )}
-//                                       {/* Menambahkan order_notes di bawah nama produk */}
-//                                       {e.order_notes && (
-//                                         <Text size="xs" c="dimmed" fs="italic" mt={4}>
-//                                           Catatan: {e.order_notes}
-//                                         </Text>
-//                                       )}
-//                                     </Stack>
-//                                   </Flex>
-//                                 </Table.Td>
-//                                 <Table.Td>{qty}</Table.Td>
-//                                 <Table.Td>
-//                                   <NumberFormatter value={price} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-//                                 </Table.Td>
-//                                 <Table.Td>
-//                                   <NumberFormatter value={subtotal} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-//                                 </Table.Td>
-//                               </Table.Tr>
-//                             );
-//                           })}
-//                         </Table.Tbody>
-//                       </Table>
-//                     </Box>
-
-//                     {/* Summary Card dengan Biaya Kurir */}
-//                     <Card withBorder mt="md" bg="gray.0">
-//                       <Stack gap="xs">
-//                         <Flex justify="space-between">
-//                           <Text fw={500}>Subtotal Produk:</Text>
-//                           <Text fw={500}>
-//                             <NumberFormatter value={totalProductPrice} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-//                           </Text>
-//                         </Flex>
-//                         <Flex justify="space-between">
-//                           <Text fw={500}>Biaya Admin:</Text>
-//                           <Text fw={500}>
-//                             <NumberFormatter value={adminFee} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-//                           </Text>
-//                         </Flex>
-//                         <Flex justify="space-between">
-//                           <Text fw={500}>Biaya Pengiriman ({data?.courier?.main || "-"} - {data?.courier?.type || "-"}):</Text>
-//                           <Text fw={500}>
-//                             <NumberFormatter value={courierPrice} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-//                           </Text>
-//                         </Flex>
-//                         <Divider my="xs" />
-//                         <Flex justify="space-between">
-//                           <Text fw={700} size="lg">Total Pembayaran:</Text>
-//                           <Text fw={700} size="lg" c="blue">
-//                             <NumberFormatter value={grandTotal} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-//                           </Text>
-//                         </Flex>
-//                       </Stack>
-//                     </Card>
-//                   </Stack>
-//                 </Flex>
+//                       </Link>
+//                     )}
+//                   </SimpleGrid>
+//                 </Card>
 //               </Stack>
-//             </Tabs.Panel>
+//             </Flex>
 
-//             <Tabs.Panel value="tracking">
-//               <Box py={25} className={`px-[20px] md:!px-[30px]`}>
-//                 {renderTracking()}
-//               </Box>
-//             </Tabs.Panel>
-//           </Tabs>
+//             <Flex gap={15} className={`[&>*]:flex-grow`} wrap="wrap">
+//               <Stack gap={10}>
+//                 <Text fw={600} c="gray.8">
+//                   Informasi Pengiriman
+//                 </Text>
+//                 <Card withBorder>
+//                   <SimpleGrid className={`!grid-cols-1 md:!grid-cols-2 !gap-[15px]`}>
+//                     <Stack gap={0}>
+//                       <Text size="xs" fw={300}>
+//                         Nama Penerima
+//                       </Text>
+//                       <Text size="sm" fw={600}>
+//                         {data?.address?.nama_penerima || "-"}
+//                       </Text>
+//                     </Stack>
+//                     <Stack gap={0}>
+//                       <Text size="xs" fw={300}>
+//                         No. Telp Penerima
+//                       </Text>
+//                       <Text size="sm">{data?.address?.phone || "-"}</Text>
+//                     </Stack>
+//                     <Stack gap={0}>
+//                       <Text size="xs" fw={300} mb={5}>
+//                         Alamat Pengiriman
+//                       </Text>
+//                       <Text size="xs">
+//                         {province?.name || "-"}, {city?.name || "-"}, {data?.address?.zipcode || "-"}
+//                       </Text>
+//                       <Text size="xs">{data?.address?.address_detail || "-"}</Text>
+//                     </Stack>
+//                   </SimpleGrid>
+//                 </Card>
+//               </Stack>
+//             </Flex>
+
+//             <Flex gap={15} className={`[&>*]:flex-grow`} wrap="wrap">
+//               <Stack gap={10} className={`[&_*]:!text-[14px]`}>
+//                 <Text fw={600} c="gray.8">
+//                   Detail Pesanan
+//                 </Text>
+                
+//                 <Box maw="calc(100vw - 40px)" className={`overflow-auto`}>
+//                   <Table withRowBorders={false} horizontalSpacing="md" miw={600}>
+//                     <Table.Thead>
+//                       <Table.Tr>
+//                         <Table.Th>No</Table.Th>
+//                         <Table.Th>Produk</Table.Th>
+//                         <Table.Th>Qty</Table.Th>
+//                         <Table.Th>Harga Satuan</Table.Th>
+//                         <Table.Th>Subtotal</Table.Th>
+//                       </Table.Tr>
+//                     </Table.Thead>
+//                     <Table.Tbody>
+//                       {data?.detail?.map((e, i) => {
+//                         // Ambil harga dari detail item (response invoice)
+//                         const price = parseInt(e.price || "0");
+//                         const qty = e.qty || 0;
+//                         const subtotal = price * qty;
+                        
+//                         return (
+//                           <Table.Tr key={i}>
+//                             <Table.Td>{i + 1}</Table.Td>
+//                             <Table.Td>
+//                               <Flex gap={15} className={`!py-[5px]`}>
+//                                 <Image 
+//                                   src={e.product?.product_image?.[0]?.image_url || "#"} 
+//                                   w={48} 
+//                                   h={48} 
+//                                   bg="gray.1" 
+//                                   radius={5} 
+//                                   className={`shrink-0`} 
+//                                 />
+//                                 <Stack gap={0}>
+//                                   <Text>{e.product?.product_name || "-"}</Text>
+//                                   {Boolean(e.product_varian_id) && (
+//                                     <Text size="sm" c="gray.7">
+//                                       Varian: {e.variant?.varian_name || "-"}
+//                                     </Text>
+//                                   )}
+//                                   {/* Menambahkan order_notes di bawah nama produk */}
+//                                   {e.order_notes && (
+//                                     <Text size="xs" c="dimmed" fs="italic" mt={4}>
+//                                       Catatan: {e.order_notes}
+//                                     </Text>
+//                                   )}
+//                                 </Stack>
+//                               </Flex>
+//                             </Table.Td>
+//                             <Table.Td>{qty}</Table.Td>
+//                             <Table.Td>
+//                               <NumberFormatter value={price} thousandSeparator="." decimalSeparator="," prefix="Rp " />
+//                             </Table.Td>
+//                             <Table.Td>
+//                               <NumberFormatter value={subtotal} thousandSeparator="." decimalSeparator="," prefix="Rp " />
+//                             </Table.Td>
+//                           </Table.Tr>
+//                         );
+//                       })}
+//                     </Table.Tbody>
+//                   </Table>
+//                 </Box>
+
+//                 {/* Summary Card dengan Biaya Kurir */}
+//                 <Card withBorder mt="md" bg="gray.0">
+//                   <Stack gap="xs">
+//                     <Flex justify="space-between">
+//                       <Text fw={500}>Subtotal Produk:</Text>
+//                       <Text fw={500}>
+//                         <NumberFormatter value={totalProductPrice} thousandSeparator="." decimalSeparator="," prefix="Rp " />
+//                       </Text>
+//                     </Flex>
+//                     <Flex justify="space-between">
+//                       <Text fw={500}>Biaya Admin:</Text>
+//                       <Text fw={500}>
+//                         <NumberFormatter value={adminFee} thousandSeparator="." decimalSeparator="," prefix="Rp " />
+//                       </Text>
+//                     </Flex>
+//                     <Flex justify="space-between">
+//                       <Text fw={500}>Biaya Pengiriman ({data?.courier?.main || "-"} - {data?.courier?.type || "-"}):</Text>
+//                       <Text fw={500}>
+//                         <NumberFormatter value={courierPrice} thousandSeparator="." decimalSeparator="," prefix="Rp " />
+//                       </Text>
+//                     </Flex>
+//                     <Divider my="xs" />
+//                     <Flex justify="space-between">
+//                       <Text fw={700} size="lg">Total Pembayaran:</Text>
+//                       <Text fw={700} size="lg" c="blue">
+//                         <NumberFormatter value={grandTotal} thousandSeparator="." decimalSeparator="," prefix="Rp " />
+//                       </Text>
+//                     </Flex>
+//                   </Stack>
+//                 </Card>
+//               </Stack>
+//             </Flex>
+//           </Stack>
 //         </Card>
 //       </Container>
 //     </div>
 //   );
 // }
-
-// INI UNTUK PUSH SEMENTARA
-import { Icon } from "@iconify/react/dist/iconify.js";
-import { Box, Button, Card, Container, Divider, Flex, Image, Modal, NumberFormatter, SimpleGrid, Stack, Table, Tabs, Text, TextInput, Title, Timeline, Badge, ThemeIcon } from "@mantine/core";
-import Link from "next/link";
-import { InvoiceResponse } from "./type";
-import { useEffect, useMemo, useState } from "react";
-import fetch from "@/utils/fetch";
-import { useListState, useDisclosure } from "@mantine/hooks";
-import { useRouter } from "next/router";
-import { City, Province } from "../dashboard/profile/address";
-
-// Definisikan interface Product
-interface Product {
-  id: number;
-  product_name: string;
-  price: string;
-  admin_fee?: string;
-  fee?: string;
-  admin?: string;
-  adminFee?: string;
-  application_fee?: string;
-  service_fee?: string;
-  product_image?: Array<{ id: number; image_url: string }>;
-}
-
-// Interface untuk response produk dari API dengan pagination
-interface ProductResponse {
-  data: Product[];
-  meta?: {
-    total: number;
-    per_page: number;
-    current_page: number;
-    last_page: number;
-  };
-  current_page?: number;
-  last_page?: number;
-  total?: number;
-}
-
-export default function Invoice() {
-  const [isClient, setIsClient] = useState(false);
-  const [data, setData] = useState<InvoiceResponse>();
-  const [products, setProducts] = useState<Map<number, Product>>(new Map());
-  const [loading, setLoading] = useListState<string>();
-  const [loadingDownload, setLoadingDownload] = useState(false);
-  const router = useRouter();
-  const { invoice } = router.query;
-  const [city, setCity] = useState<City>();
-  const [province, setProvince] = useState<Province>();
-  
-  // State untuk tabs
-  const [activeTab, setActiveTab] = useState<string | null>('invoice');
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    getData();
-  }, [isClient, invoice]);
-
-  useEffect(() => {
-    if (data?.detail) {
-      fetchAllProductsPaginated();
-    }
-  }, [data]);
-
-  useEffect(() => {
-    getProvinceCity();
-  }, [data]);
-
-  const fetchAllProductsPaginated = async () => {
-    try {
-      setLoading.append("fetchProducts");
-      
-      const productsMap = new Map<number, Product>();
-      let currentPage = 1;
-      let lastPage = 1;
-      let hasMorePages = true;
-      
-      // Dapatkan semua product IDs yang perlu di-fetch
-      const neededProductIds = new Set(data?.detail.map(item => item.product_id) || []);
-      console.log("🔍 Need to fetch products:", Array.from(neededProductIds));
-      
-      // Loop untuk mengambil semua halaman
-      while (hasMorePages) {
-        console.log(`📦 Fetching products page ${currentPage}...`);
-        
-        await fetch<any, ProductResponse>({
-          url: `product?page=${currentPage}`,
-          method: "GET",
-          success: ({ data: responseData }) => {
-            console.log(`📄 Response page ${currentPage}:`, responseData);
-            
-            // Handle berbagai format response
-            let productsData: Product[] = [];
-            
-            if (responseData?.data && Array.isArray(responseData.data)) {
-              // Format: { data: [...], meta: { last_page: ... } }
-              productsData = responseData.data;
-              lastPage = responseData.meta?.last_page || responseData.last_page || 1;
-              
-              // Update hasMorePages berdasarkan lastPage
-              if (currentPage >= lastPage) {
-                hasMorePages = false;
-              } else {
-                currentPage++;
-              }
-            } else if (Array.isArray(responseData)) {
-              // Format: langsung array
-              productsData = responseData;
-              // Jika response adalah array dan kosong, berhenti
-              if (productsData.length === 0) {
-                hasMorePages = false;
-              } else {
-                // Coba halaman berikutnya
-                currentPage++;
-              }
-            } else {
-              // Format tidak dikenal, berhenti
-              hasMorePages = false;
-            }
-            
-            // Masukkan semua produk dari halaman ini ke map
-            productsData.forEach((product: Product) => {
-              if (product?.id) {
-                productsMap.set(product.id, product);
-                
-                // Log jika ini adalah produk yang kita butuhkan
-                if (neededProductIds.has(product.id)) {
-                  const productAny = product as any;
-                  console.log(`✅ Found needed product ${product.id} on page ${currentPage-1}:`, {
-                    id: product.id,
-                    name: product.product_name,
-                    admin_fee: productAny.admin_fee || 'NOT FOUND'
-                  });
-                }
-              }
-            });
-            
-            console.log(`📊 Page ${currentPage - 1}: Got ${productsData.length} products, total so far: ${productsMap.size}`);
-            console.log(`🔄 Has more pages: ${hasMorePages}, current page: ${currentPage}, last page: ${lastPage}`);
-          },
-          error: (error) => {
-            console.error(`❌ Error fetching page ${currentPage}:`, error);
-            hasMorePages = false;
-          }
-        });
-      }
-      
-      setProducts(productsMap);
-      console.log("🎯 Total products fetched:", productsMap.size);
-      
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    } finally {
-      setLoading.filter((e) => e != "fetchProducts");
-    }
-  };
-
-  const getProvinceCity = async () => {
-    if (!data?.address?.city_id || !data?.address?.province_id) return;
-
-    await fetch<any, City>({
-      url: `city/${data.address.city_id}`,
-      method: "GET",
-      success: ({ data: cityData }) => cityData && setCity(cityData),
-    });
-
-    await fetch<any, Province>({
-      url: `province/${data.address.province_id}`,
-      method: "GET",
-      success: ({ data: provinceData }) => provinceData && setProvince(provinceData),
-    });
-  };
-
-  const getData = async () => {
-    if (invoice) {
-      await fetch<any, InvoiceResponse>({
-        url: `order-product-invoice/${invoice}`,
-        method: "GET",
-        data: {},
-        before: () => setLoading.append("getdata"),
-        success: ({ data }) => {
-          if (data) {
-            setData(data);
-            console.log("📋 Invoice Data:", data);
-            console.log("📋 Detail items:", data.detail);
-            console.log("🚚 Courier Data:", data.courier);
-            console.log("💰 Admin Fee (Invoice Level):", data.admin_fee);
-          }
-        },
-        complete: () => setLoading.filter((e) => e != "getdata"),
-        error: () => {},
-      });
-    }
-  };
-
-  const handleDownloadInvoice = async () => {
-    if (!invoice) return;
-    
-    setLoadingDownload(true);
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_WS_URL;
-      
-      if (!apiUrl) {
-        console.error('NEXT_PUBLIC_WS_URL is not defined');
-        return;
-      }
-
-      const baseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
-      
-      let downloadUrl;
-      if (baseUrl.endsWith('/api')) {
-        downloadUrl = `${baseUrl}/order-product/download/${invoice}`;
-      } else if (baseUrl.endsWith('/api/')) {
-        downloadUrl = `${baseUrl}order-product/download/${invoice}`;
-      } else {
-        downloadUrl = `${baseUrl}/api/order-product/download/${invoice}`;
-      }
-      
-      console.log('Download URL:', downloadUrl);
-      window.open(downloadUrl, '_blank');
-    } catch (error) {
-      console.error('Error downloading invoice:', error);
-    } finally {
-      setLoadingDownload(false);
-    }
-  };
-
-  const iconStatus: { [key: string]: string } = {
-    expired: "ooui:alert",
-    pending: "icon-park-solid:time",
-    verified: "uiw:circle-check",
-  };
-
-  // Hitung biaya kurir
-  const courierPrice = useMemo(() => {
-    if (data?.courier?.price) {
-      const price = parseInt(data.courier.price);
-      return isNaN(price) ? 0 : price;
-    }
-    return 0;
-  }, [data]);
-
-  // Hitung total harga produk dari data.detail[].price
-  const totalProductPrice = useMemo(() => {
-    const total = data?.detail.reduce((total, item) => {
-      // Ambil harga dari detail item (response invoice)
-      const price = parseInt(item.price || "0");
-      return total + (price * (item.qty || 0));
-    }, 0) || 0;
-    
-    console.log("💰 Total Product Price from detail.price:", total);
-    return total;
-  }, [data]);
-
-  // Admin fee diambil dari level invoice (flat untuk seluruh invoice)
-  const adminFee = useMemo(() => {
-    if (data?.admin_fee) {
-      return data.admin_fee;
-    }
-    return 0;
-  }, [data]);
-
-  // Grand total = total produk + admin fee (flat) + biaya kurir
-  const grandTotal = useMemo(() => {
-    // Bisa juga menggunakan data.grandtotal langsung dari response
-    if (data?.grandtotal) {
-      return data.grandtotal;
-    }
-    
-    return totalProductPrice + adminFee + courierPrice;
-  }, [totalProductPrice, adminFee, courierPrice, data]);
-
-  const formatDate = (dateString?: string): string => {
-    if (!dateString) return "-";
-
-    const date = new Date(dateString);
-    const hours = date.getUTCHours().toString().padStart(2, "0");
-    const minutes = date.getUTCMinutes().toString().padStart(2, "0");
-    const day = date.getUTCDate().toString().padStart(2, "0");
-    const month = date.getUTCMonth();
-    const year = date.getUTCFullYear();
-    const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-
-    return `${hours}:${minutes}, ${day} ${monthNames[month]} ${year}`;
-  };
-
-  if (!isClient) {
-    return (
-      <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px]`}>
-        <Container px={0} className={`py-[44px] md:py-[100px]`}>
-          <Card p={0} radius={8} className={`!shadow-lg`}>
-            <Card className={`!bg-gradient-to-bl from-primary-base to-primary-dark !overflow-visible`} p={30} c="white" radius={0}>
-              <Flex justify="center" align="center" h={200}>
-                <Text>Memuat invoice...</Text>
-              </Flex>
-            </Card>
-          </Card>
-        </Container>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px]`}>
-      <Container px={0} className={`py-[44px] md:py-[100px]`}>
-        <Card p={0} radius={8} className={`!shadow-lg`}>
-          <Card className={`!bg-gradient-to-bl from-primary-base to-primary-dark !overflow-visible`} p={30} c="white" radius={0}>
-            <Stack gap={30}>
-              <Flex justify="space-between" align="center" wrap="wrap" gap={20}>
-                <Flex gap={15} align="center">
-                  <Icon icon="iconamoon:invoice-light" className={`text-[48px]`} />
-                  <Stack gap={0}>
-                    <Title order={1} className={`uppercase !text-[20px] md:!text-[1.8rem]`}>
-                      Invoice Pesanan
-                    </Title>
-                    <Text size="sm">{invoice}</Text>
-                  </Stack>
-                </Flex>
-
-                <Stack gap={5} className={`items-start md:!items-end`}>
-                  <Card px={15} py={5} radius={10} withBorder className={`!overflow-visible`}>
-                    <Flex align="center" gap={10}>
-                      <Text size="sm" c="gray.8">
-                        Status Pembayaran :
-                      </Text>
-                      <Flex gap={5} align="center">
-                        <Icon
-                          icon={iconStatus[data?.payment_status?.toLowerCase() ?? "pending"]}
-                          className={`
-                            text-[18px]
-                            ${data?.payment_status?.toLowerCase() == "expired" && "text-red-400"}
-                            ${data?.payment_status?.toLowerCase() == "pending" && "text-yellow-500"}
-                            ${data?.payment_status?.toLowerCase() == "verified" && "text-green-500"}
-                          `}
-                        />
-                        <Text size="md" fw={400}>
-                          {data?.payment_status?.toLowerCase() == "expired" && <>Expired</>}
-                          {data?.payment_status?.toLowerCase() == "pending" && <>Pending</>}
-                          {data?.payment_status?.toLowerCase() == "verified" && <>Berhasil</>}
-                        </Text>
-                      </Flex>
-                    </Flex>
-                  </Card>
-                </Stack>
-              </Flex>
-            </Stack>
-          </Card>
-
-          {/* Hanya menampilkan panel invoice, tanpa tabs tracking */}
-          <Stack py={25} gap={30} className={`px-[20px] md:!px-[30px]`}>
-            <Flex gap={15} className={`[&>*]:flex-grow`} wrap="wrap-reverse">
-              <Stack gap={10}>
-                <Text fw={600} c="gray.8">
-                  Informasi Pemesan
-                </Text>
-                <Card withBorder>
-                  <SimpleGrid className={`!grid-cols-1 md:!grid-cols-2 !gap-[15px]`}>
-                    <Stack gap={0}>
-                      <Text size="xs" fw={300}>
-                        Nama Pemesan
-                      </Text>
-                      <Text size="sm" fw={600}>
-                        {data?.address?.nama_penerima || "-"}
-                      </Text>
-                    </Stack>
-                    <Stack gap={0}>
-                      <Text size="xs" fw={300}>
-                        Kurir yang Dipilih
-                      </Text>
-                      <Text size="sm" className="capitalize">
-                        {data?.courier?.main || "-"} - {data?.courier?.type || "-"}
-                      </Text>
-                    </Stack>
-                    <Stack gap={0}>
-                      <Text size="xs" fw={300}>
-                        Tanggal Pesanan Dibuat
-                      </Text>
-                      <Text size="sm" suppressHydrationWarning>
-                        {formatDate(data?.created_at)}
-                      </Text>
-                    </Stack>
-                  </SimpleGrid>
-                </Card>
-              </Stack>
-
-              <Stack gap={10} className={`md:max-w-[300px]`}>
-                <Text fw={600} c="gray.8">
-                  Total Pembayaran
-                </Text>
-                <Card bg="gray.1">
-                  <SimpleGrid className={`!grid-cols-1 md:!grid-cols-1 !gap-[10px]`}>
-                    <Text size="xl" fw={600}>
-                      <NumberFormatter value={grandTotal} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-                    </Text>
-                    <Stack gap={0}>
-                      <Text size="xs" fw={300}>
-                        Metode Pembayaran
-                      </Text>
-                      <Text size="sm" className="capitalize">
-                        {data?.payment_method || "-"}
-                      </Text>
-                    </Stack>
-                    <Button
-                      variant="light"
-                      color="blue"
-                      leftSection={<Icon icon="mdi:file-download-outline" />}
-                      onClick={handleDownloadInvoice}
-                      loading={loadingDownload}
-                      size="sm"
-                      fullWidth
-                      disabled={!invoice}
-                    >
-                      Download Invoice Merch
-                    </Button>
-                    {data?.xendit_url && (
-                      <Link href={data.xendit_url} target="_blank">
-                        <Button
-                          variant="light"
-                          color="green"
-                          leftSection={<Icon icon="mdi:external-link" />}
-                          size="sm"
-                          fullWidth
-                        >
-                          Buka Halaman Pembayaran
-                        </Button>
-                      </Link>
-                    )}
-                  </SimpleGrid>
-                </Card>
-              </Stack>
-            </Flex>
-
-            <Flex gap={15} className={`[&>*]:flex-grow`} wrap="wrap">
-              <Stack gap={10}>
-                <Text fw={600} c="gray.8">
-                  Informasi Pengiriman
-                </Text>
-                <Card withBorder>
-                  <SimpleGrid className={`!grid-cols-1 md:!grid-cols-2 !gap-[15px]`}>
-                    <Stack gap={0}>
-                      <Text size="xs" fw={300}>
-                        Nama Penerima
-                      </Text>
-                      <Text size="sm" fw={600}>
-                        {data?.address?.nama_penerima || "-"}
-                      </Text>
-                    </Stack>
-                    <Stack gap={0}>
-                      <Text size="xs" fw={300}>
-                        No. Telp Penerima
-                      </Text>
-                      <Text size="sm">{data?.address?.phone || "-"}</Text>
-                    </Stack>
-                    <Stack gap={0}>
-                      <Text size="xs" fw={300} mb={5}>
-                        Alamat Pengiriman
-                      </Text>
-                      <Text size="xs">
-                        {province?.name || "-"}, {city?.name || "-"}, {data?.address?.zipcode || "-"}
-                      </Text>
-                      <Text size="xs">{data?.address?.address_detail || "-"}</Text>
-                    </Stack>
-                  </SimpleGrid>
-                </Card>
-              </Stack>
-            </Flex>
-
-            <Flex gap={15} className={`[&>*]:flex-grow`} wrap="wrap">
-              <Stack gap={10} className={`[&_*]:!text-[14px]`}>
-                <Text fw={600} c="gray.8">
-                  Detail Pesanan
-                </Text>
-                
-                <Box maw="calc(100vw - 40px)" className={`overflow-auto`}>
-                  <Table withRowBorders={false} horizontalSpacing="md" miw={600}>
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th>No</Table.Th>
-                        <Table.Th>Produk</Table.Th>
-                        <Table.Th>Qty</Table.Th>
-                        <Table.Th>Harga Satuan</Table.Th>
-                        <Table.Th>Subtotal</Table.Th>
-                      </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {data?.detail?.map((e, i) => {
-                        // Ambil harga dari detail item (response invoice)
-                        const price = parseInt(e.price || "0");
-                        const qty = e.qty || 0;
-                        const subtotal = price * qty;
-                        
-                        return (
-                          <Table.Tr key={i}>
-                            <Table.Td>{i + 1}</Table.Td>
-                            <Table.Td>
-                              <Flex gap={15} className={`!py-[5px]`}>
-                                <Image 
-                                  src={e.product?.product_image?.[0]?.image_url || "#"} 
-                                  w={48} 
-                                  h={48} 
-                                  bg="gray.1" 
-                                  radius={5} 
-                                  className={`shrink-0`} 
-                                />
-                                <Stack gap={0}>
-                                  <Text>{e.product?.product_name || "-"}</Text>
-                                  {Boolean(e.product_varian_id) && (
-                                    <Text size="sm" c="gray.7">
-                                      Varian: {e.variant?.varian_name || "-"}
-                                    </Text>
-                                  )}
-                                  {/* Menambahkan order_notes di bawah nama produk */}
-                                  {e.order_notes && (
-                                    <Text size="xs" c="dimmed" fs="italic" mt={4}>
-                                      Catatan: {e.order_notes}
-                                    </Text>
-                                  )}
-                                </Stack>
-                              </Flex>
-                            </Table.Td>
-                            <Table.Td>{qty}</Table.Td>
-                            <Table.Td>
-                              <NumberFormatter value={price} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-                            </Table.Td>
-                            <Table.Td>
-                              <NumberFormatter value={subtotal} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-                            </Table.Td>
-                          </Table.Tr>
-                        );
-                      })}
-                    </Table.Tbody>
-                  </Table>
-                </Box>
-
-                {/* Summary Card dengan Biaya Kurir */}
-                <Card withBorder mt="md" bg="gray.0">
-                  <Stack gap="xs">
-                    <Flex justify="space-between">
-                      <Text fw={500}>Subtotal Produk:</Text>
-                      <Text fw={500}>
-                        <NumberFormatter value={totalProductPrice} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-                      </Text>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fw={500}>Biaya Admin:</Text>
-                      <Text fw={500}>
-                        <NumberFormatter value={adminFee} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-                      </Text>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fw={500}>Biaya Pengiriman ({data?.courier?.main || "-"} - {data?.courier?.type || "-"}):</Text>
-                      <Text fw={500}>
-                        <NumberFormatter value={courierPrice} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-                      </Text>
-                    </Flex>
-                    <Divider my="xs" />
-                    <Flex justify="space-between">
-                      <Text fw={700} size="lg">Total Pembayaran:</Text>
-                      <Text fw={700} size="lg" c="blue">
-                        <NumberFormatter value={grandTotal} thousandSeparator="." decimalSeparator="," prefix="Rp " />
-                      </Text>
-                    </Flex>
-                  </Stack>
-                </Card>
-              </Stack>
-            </Flex>
-          </Stack>
-        </Card>
-      </Container>
-    </div>
-  );
-}
