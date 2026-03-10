@@ -1978,8 +1978,9 @@ interface TrackingEvent {
   description: string;
   time: string;
   location?: string;
-  isActive?: boolean;
+  tracking_status_id: number;
   isCompleted?: boolean;
+  isActive?: boolean;
 }
 
 export default function Invoice() {
@@ -2228,19 +2229,27 @@ export default function Invoice() {
     return `${hours}:${minutes}, ${day} ${monthNames[month]} ${year}`;
   };
 
-  // Konversi manifest ke tracking events untuk timeline
+  // Konversi manifest ke tracking events untuk timeline - URUTAN BERDASARKAN TRACKING_STATUS_ID
+  // tracking_status_id 1 = paling bawah (status awal)
+  // tracking_status_id 2 = tengah
+  // tracking_status_id 3 = atas (status akhir)
   const trackingEvents = useMemo<TrackingEvent[]>(() => {
     const manifestData = data?.manifest;
-    console.log("useMemo trackingEvents - manifest:", manifestData);
     
     if (!manifestData || manifestData.length === 0) {
       return [];
     }
 
-    // Urutkan manifest berdasarkan created_at (ascending)
+    // Urutkan manifest berdasarkan tracking_status_id ASCENDING (1,2,3)
+    // Tapi untuk tampilan di timeline, kita ingin:
+    // - ID 1 (status awal) di PALING BAWAH
+    // - ID 2 (status menengah) di TENGAH
+    // - ID 3 (status akhir) di PALING ATAS
     const sortedManifest = [...manifestData].sort((a, b) => 
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      a.tracking_status_id - b.tracking_status_id
     );
+
+    console.log("Sorted manifest by tracking_status_id:", sortedManifest.map(m => ({id: m.tracking_status_id, status: m.status_name})));
 
     // Konversi ke tracking events
     return sortedManifest.map((item, index) => ({
@@ -2248,16 +2257,23 @@ export default function Invoice() {
       description: item.tracking_status?.description || item.description,
       time: formatDateManifest(item.created_at),
       location: item.location,
-      isCompleted: true,
-      isActive: index === sortedManifest.length - 1 // item terakhir adalah yang aktif
+      tracking_status_id: item.tracking_status_id,
+      isCompleted: true, // Semua manifest yang ada dianggap completed karena sudah terjadi
+      isActive: item.tracking_status_id === 3 // Hanya status dengan ID 3 (Telah Diterima) yang dianggap aktif
     }));
   }, [data?.manifest]);
+
+  // Cek apakah status terakhir adalah "Telah Diterima" (tracking_status_id = 3)
+  const isLastStatusReceived = useMemo(() => {
+    if (trackingEvents.length === 0) return false;
+    
+    // Cek apakah ada manifest dengan tracking_status_id = 3
+    return trackingEvents.some(event => event.tracking_status_id === 3);
+  }, [trackingEvents]);
 
   // Render tracking section - menggunakan data manifest dari response invoice
   const renderTracking = () => {
     const manifestData = data?.manifest;
-    console.log("renderTracking - manifest:", manifestData);
-    console.log("renderTracking - trackingEvents:", trackingEvents);
     
     // Jika manifest undefined atau array kosong, tampilkan pesan
     if (!manifestData || manifestData.length === 0) {
@@ -2290,7 +2306,6 @@ export default function Invoice() {
               <Box>
                 <Text size="xs" c="dimmed">Kode Tracking</Text>
                 <Text fw={700} size="xl">{trackingNumber}</Text>
-                {/* <Badge color="green" size="lg" mt="xs">Dalam Pengiriman</Badge> */}
               </Box>
               <Box>
                 <Text size="xs" c="dimmed">Estimasi Tiba</Text>
@@ -2351,62 +2366,67 @@ export default function Invoice() {
             <Box style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
               <Box style={{ maxWidth: 500, width: '100%' }}>
                 <Timeline 
-                  active={trackingEvents.findIndex(t => t.isActive)} 
+                  active={trackingEvents.findIndex(e => e.tracking_status_id === 3)} // Active index adalah status dengan ID 3 (Telah Diterima)
                   bulletSize={24} 
                   lineWidth={2}
                 >
-                  {trackingEvents.map((event, index) => (
-                    <Timeline.Item
-                      key={index}
-                      bullet={
-                        <ThemeIcon
-                          size={24}
-                          radius="xl"
-                          color={event.isCompleted ? 'green' : event.isActive ? 'blue' : 'gray'}
-                          variant={event.isCompleted || event.isActive ? 'filled' : 'light'}
-                        >
-                          <Icon 
-                            icon={
-                              event.isCompleted ? 'mdi:check' : 
-                              event.isActive ? 'mdi:truck' : 
-                              'mdi:circle-outline'
-                            } 
-                            width={14} 
-                          />
-                        </ThemeIcon>
-                      }
-                      title={
-                        <Text fw={600} ta="center" c={event.isCompleted ? 'green' : event.isActive ? 'blue' : 'dimmed'}>
-                          {event.status}
-                        </Text>
-                      }
-                    >
-                      <Stack gap={4} align="center">
-                        {event.location && (
-                          <Text size="xs" c="dimmed" ta="center">{event.location}</Text>
-                        )}
-                        <Text size="sm" ta="center">{event.description}</Text>
-                      </Stack>
-                    </Timeline.Item>
-                  ))}
+                  {/* Balik urutan untuk tampilan: ID 1 di bawah, ID 3 di atas */}
+                  {[...trackingEvents].reverse().map((event, index) => {
+                    const originalIndex = trackingEvents.length - 1 - index;
+                    const isActive = event.tracking_status_id === 3;
+                    
+                    return (
+                      <Timeline.Item
+                        key={originalIndex}
+                        bullet={
+                          <ThemeIcon
+                            size={24}
+                            radius="xl"
+                            color={isActive ? 'blue' : 'green'}
+                            variant="filled"
+                          >
+                            <Icon 
+                              icon={
+                                isActive ? 'mdi:check-circle' : 'mdi:check'
+                              } 
+                              width={14} 
+                            />
+                          </ThemeIcon>
+                        }
+                        title={
+                          <Text fw={600} c={isActive ? 'blue' : 'dimmed'}>
+                            {event.status}
+                          </Text>
+                        }
+                      >
+                        <Stack gap={4}>
+                          {event.location && (
+                            <Text size="xs" c="dimmed">{event.location}</Text>
+                          )}
+                          <Text size="sm">{event.description}</Text>
+                          <Text size="xs" c="dimmed">{event.time}</Text>
+                        </Stack>
+                      </Timeline.Item>
+                    );
+                  })}
                 </Timeline>
               </Box>
             </Box>
           </Card>
         </Box>
 
-        {/* Diterima Card - Tampilkan jika status terakhir adalah paket telah terkirim */}
-        {trackingEvents.length > 0 && trackingEvents[trackingEvents.length - 1].status.toLowerCase().includes("terkirim") && (
+        {/* Diterima Card - Tampilkan jika ada status dengan tracking_status_id = 3 */}
+        {isLastStatusReceived && (
           <Box w="100%" style={{ display: 'flex', justifyContent: 'center' }}>
             <Card withBorder bg="green.0" w="100%" maw={650} style={{ margin: '0 auto' }}>
               <Flex align="center" gap="md" justify="center" direction="column">
                 <ThemeIcon size="lg" radius="xl" color="green">
-                  <Icon icon="mdi:check" width={20} />
+                  <Icon icon="mdi:check-circle" width={20} />
                 </ThemeIcon>
                 <Box>
-                  <Text fw={600} ta="center">Diterima</Text>
+                  <Text fw={600} ta="center" size="lg">Pesanan Telah Diterima</Text>
                   <Text size="sm" c="dimmed" ta="center">
-                    Paket telah terkirim. {trackingEvents[trackingEvents.length - 1].time}
+                    {trackingEvents.find(e => e.tracking_status_id === 3)?.time || "-"}
                   </Text>
                 </Box>
               </Flex>
@@ -2734,7 +2754,6 @@ export default function Invoice() {
     </div>
   );
 }
-
 // INI UNTUK PUSH SEMENTARA
 // import { Icon } from "@iconify/react/dist/iconify.js";
 // import { Box, Button, Card, Container, Divider, Flex, Image, Modal, NumberFormatter, SimpleGrid, Stack, Table, Tabs, Text, TextInput, Title, Timeline, Badge, ThemeIcon } from "@mantine/core";
