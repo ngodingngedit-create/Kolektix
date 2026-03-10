@@ -2191,6 +2191,15 @@ export default function Invoice() {
     return null;
   }, [data]);
 
+  // Ambil lokasi pengiriman (Dikirim Dari) dari manifest
+  const shippingFromLocation = useMemo(() => {
+    if (data?.manifest && data.manifest.length > 0) {
+      // Ambil lokasi dari manifest pertama
+      return data.manifest[0].location || "Warehouse";
+    }
+    return "Warehouse";
+  }, [data?.manifest]);
+
   const formatDate = (dateString?: string): string => {
     if (!dateString) return "-";
 
@@ -2514,6 +2523,15 @@ export default function Invoice() {
                             {formatDate(data?.created_at)}
                           </Text>
                         </Stack>
+                        {/* Tambahan informasi Dikirim Dari */}
+                        <Stack gap={0}>
+                          <Text size="xs" fw={300}>
+                            Dikirim Dari
+                          </Text>
+                          <Text size="sm" fw={600}>
+                            {shippingFromLocation}
+                          </Text>
+                        </Stack>
                       </SimpleGrid>
                     </Card>
                   </Stack>
@@ -2639,11 +2657,16 @@ export default function Invoice() {
                                     />
                                     <Stack gap={0}>
                                       <Text>{e.product?.product_name || "-"}</Text>
-                                      {Boolean(e.product_varian_id) && (
+                                      {/* Menampilkan informasi varian jika ada */}
+                                      {e.product_varian_id && e.variant ? (
                                         <Text size="sm" c="gray.7">
-                                          Varian: {e.variant?.varian_name || "-"}
+                                          Varian: {e.variant.varian_name || "-"}
                                         </Text>
-                                      )}
+                                      ) : e.variant ? (
+                                        <Text size="sm" c="gray.7">
+                                          Varian: {e.variant.varian_name || "-"}
+                                        </Text>
+                                      ) : null}
                                       {e.order_notes && (
                                         <Text size="xs" c="dimmed" fs="italic" mt={4}>
                                           Catatan: {e.order_notes}

@@ -3502,7 +3502,7 @@
 
 // KODE YANG LAGI DI REVISI --------------------------------------------------
 
-import { PropsWithChildren, useEffect, useMemo, useState, useRef } from "react";
+import { PropsWithChildren, useEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
   Container,
   Group,
@@ -3535,7 +3535,7 @@ import {
   Badge,
   ScrollArea,
 } from "@mantine/core";
-import { useListState, useMediaQuery } from "@mantine/hooks";
+import { useListState, useMediaQuery, useDebouncedCallback, useThrottledCallback } from "@mantine/hooks";
 import { MerchListResponse } from "../dashboard/merch/type";
 import { Delete, Get } from "@/utils/REST";
 import useLoggedUser from "@/utils/useLoggedUser";
@@ -3550,6 +3550,10 @@ import { currencyFormat } from "@/utils/currencyFormat";
 import { z } from "zod";
 import { notifications } from "@mantine/notifications";
 import { LoadScript, Autocomplete, GoogleMap, Marker, useJsApiLoader, DirectionsRenderer } from "@react-google-maps/api";
+
+// Cache untuk menyimpan hasil API
+const productCache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 menit
 
 // Google Maps Libraries
 const libraries: ("places" | "drawing" | "geometry" | "visualization")[] = ["places"];
@@ -3762,6 +3766,22 @@ const ORIGIN_LONGITUDE = 106.7672963;
 const GOOGLE_MAPS_API_KEY = "AIzaSyBxZekg89Ut1U72fFpQldJAenvgTy197As";
 const GOOGLE_MAPS_MAP_ID = "795838f77e7bb079c78f5aac";
 
+// Cache management functions
+const getCachedData = (key: string) => {
+  const cached = productCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  return null;
+};
+
+const setCachedData = (key: string, data: any) => {
+  productCache.set(key, {
+    data,
+    timestamp: Date.now()
+  });
+};
+
 export default function Cart() {
   const [isr, setIsr] = useState(false);
   const [modal, setModal] = useState<string>();
@@ -3787,6 +3807,10 @@ export default function Cart() {
     show: false,
     message: "",
   });
+  
+  // Flag untuk mencegah multiple API calls
+  const isFetchingRef = useRef(false);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout>();
 
   const user = useLoggedUser();
   const router = useRouter();
@@ -3810,6 +3834,24 @@ export default function Cart() {
     },
     validate: zodResolver(formStateSchema),
   });
+
+  // Debounced function untuk check ongkir
+  const debouncedCheckOngkir = useDebouncedCallback(() => {
+    if (form.values.receiver?.latitude && 
+        form.values.receiver?.longitude && 
+        form.values.receiver?.pos_code &&
+        pickupDeliveryInfo.is_delivery === 1) {
+      checkAllOngkir();
+    }
+  }, 500);
+
+  // Throttled function untuk getData
+  const throttledGetData = useThrottledCallback(
+    () => {
+      getData();
+    },
+    3000 // Minimal 3 detik antara pemanggilan
+  );
 
   // Update form values when user data changes
   useEffect(() => {
@@ -3855,25 +3897,51 @@ export default function Cart() {
   }, []);
 
   useEffect(() => {
-    getData();
     const _orderData = JSON.parse(Cookies.get("order_data") ?? "[]");
-    if (!_orderData || _orderData.length == 0) router.push("/merchandise");
+    if (!_orderData || _orderData.length == 0) {
+      router.push("/merchandise");
+      return;
+    }
     setOrderData(_orderData);
+    
+    // Panggil throttledGetData hanya sekali
+    if (isr) {
+      throttledGetData();
+    }
   }, [isr]);
 
-  // Fetch ongkir when receiver has location data
+  // Fetch ongkir dengan debounce
   useEffect(() => {
-    if (form.values.receiver && 
-        form.values.receiver.latitude && 
-        form.values.receiver.longitude && 
-        form.values.receiver.pos_code &&
-        pickupDeliveryInfo.is_delivery === 1) {
-      checkAllOngkir();
-    }
+    debouncedCheckOngkir();
+    
+    // Cleanup timeout
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
   }, [form.values.receiver, pickupDeliveryInfo.is_delivery]);
 
   const getData = async () => {
+    // Cek apakah sedang fetching
+    if (isFetchingRef.current) {
+      console.log("Already fetching products, skipping...");
+      return;
+    }
+
     try {
+      isFetchingRef.current = true;
+      
+      // Cek cache terlebih dahulu
+      const cachedProducts = getCachedData('all_products');
+      if (cachedProducts) {
+        console.log("Using cached products");
+        setProductList.setState(cachedProducts);
+        processStoreLocations(cachedProducts);
+        return;
+      }
+
+      console.log("Fetching products from API...");
       const fetchAllProducts = async () => {
         let allProducts: any[] = [];
         let currentPage = 1;
@@ -3881,6 +3949,11 @@ export default function Cart() {
         let totalPages = 0;
 
         while (hasMorePages) {
+          // Tambahkan delay antar request untuk menghindari overload
+          if (currentPage > 1) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+          
           const res: any = await Get("product", { page: currentPage });
           
           if (res.data && Array.isArray(res.data)) {
@@ -3906,79 +3979,32 @@ export default function Cart() {
       const allProducts = await fetchAllProducts();
       console.log("All products loaded:", allProducts.length);
       
+      // Simpan ke cache
+      setCachedData('all_products', allProducts);
+      
       setProductList.setState(allProducts);
+      processStoreLocations(allProducts);
 
-      const allStoreLocations: StoreLocation[] = [];
-      allProducts.forEach((product: any) => {
-        if (product.has_store_location && product.has_store_location.is_active === 1) {
-          const exists = allStoreLocations.some(loc => loc.id === product.has_store_location.id);
-          if (!exists) {
-            allStoreLocations.push(product.has_store_location);
-          }
-        }
-      });
-      setStoreLocations.setState(allStoreLocations);
-
-      const _orderData = JSON.parse(Cookies.get("order_data") ?? "[]");
-
-      if (_orderData && _orderData.length > 0) {
-        const firstProductId = _orderData[0].product_id;
-        const orderedProduct = _.find(allProducts, ["id", firstProductId]);
-
-        if (orderedProduct) {
-          const hasPickupInstore = orderedProduct.is_pickup_instore === 1 ? 1 : 0;
-          const hasDelivery = orderedProduct.is_delivery === 1 ? 1 : 0;
-
-          setPickupDeliveryInfo({
-            is_pickup_instore: hasPickupInstore,
-            is_delivery: hasDelivery,
-          });
-
-          form.setValues({
-            is_pickup_instore: hasPickupInstore,
-            is_delivery: hasDelivery,
-            payment_method_id: 4,
-          });
-
-          if (hasPickupInstore === 1 && orderedProduct.has_store_location) {
-            form.setValues({
-              pickup_location: {
-                store_location_id: orderedProduct.has_store_location.id,
-                address: orderedProduct.has_store_location.full_addres,
-                store_name: orderedProduct.has_store_location.store_name,
-              },
-            });
-          }
-
-          if (hasDelivery === 0) {
-            form.setValues({
-              courier: undefined,
-              receiver: undefined,
-            });
-          }
-
-          if (hasPickupInstore === 0) {
-            form.setValues({
-              nama_pemesan: undefined,
-              email_pemesan: undefined,
-              phone_pemesan: undefined,
-              pickup_location: undefined,
-            });
-          }
-        }
-      }
     } catch (err) {
       console.log("Error fetching products:", err);
+      // Fallback ke single page request
       try {
         const res: any = await Get("product", {});
         if (res.data) {
           setProductList.setState(res.data);
+          processStoreLocations(res.data);
         }
       } catch (fallbackErr) {
         console.log("Fallback also failed:", fallbackErr);
       }
+    } finally {
+      // Reset fetching flag setelah delay
+      fetchTimeoutRef.current = setTimeout(() => {
+        isFetchingRef.current = false;
+      }, 2000);
     }
 
+    // Fetch province dan address tetap jalan
     await fetch<any, Province[]>({
       url: "province",
       method: "GET",
@@ -4023,6 +4049,68 @@ export default function Cart() {
         },
         complete: () => setLoading.filter((e) => e != "getaddress"),
       });
+    }
+  };
+
+  const processStoreLocations = (products: any[]) => {
+    const allStoreLocations: StoreLocation[] = [];
+    products.forEach((product: any) => {
+      if (product.has_store_location && product.has_store_location.is_active === 1) {
+        const exists = allStoreLocations.some(loc => loc.id === product.has_store_location.id);
+        if (!exists) {
+          allStoreLocations.push(product.has_store_location);
+        }
+      }
+    });
+    setStoreLocations.setState(allStoreLocations);
+
+    const _orderData = JSON.parse(Cookies.get("order_data") ?? "[]");
+
+    if (_orderData && _orderData.length > 0) {
+      const firstProductId = _orderData[0].product_id;
+      const orderedProduct = _.find(products, ["id", firstProductId]);
+
+      if (orderedProduct) {
+        const hasPickupInstore = orderedProduct.is_pickup_instore === 1 ? 1 : 0;
+        const hasDelivery = orderedProduct.is_delivery === 1 ? 1 : 0;
+
+        setPickupDeliveryInfo({
+          is_pickup_instore: hasPickupInstore,
+          is_delivery: hasDelivery,
+        });
+
+        form.setValues({
+          is_pickup_instore: hasPickupInstore,
+          is_delivery: hasDelivery,
+          payment_method_id: 4,
+        });
+
+        if (hasPickupInstore === 1 && orderedProduct.has_store_location) {
+          form.setValues({
+            pickup_location: {
+              store_location_id: orderedProduct.has_store_location.id,
+              address: orderedProduct.has_store_location.full_addres,
+              store_name: orderedProduct.has_store_location.store_name,
+            },
+          });
+        }
+
+        if (hasDelivery === 0) {
+          form.setValues({
+            courier: undefined,
+            receiver: undefined,
+          });
+        }
+
+        if (hasPickupInstore === 0) {
+          form.setValues({
+            nama_pemesan: undefined,
+            email_pemesan: undefined,
+            phone_pemesan: undefined,
+            pickup_location: undefined,
+          });
+        }
+      }
     }
   };
 

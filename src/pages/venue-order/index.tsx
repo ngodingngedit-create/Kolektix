@@ -553,14 +553,11 @@ export default function Cart() {
     const user = useLoggedUser();
     const router = useRouter();
 
-    // State untuk events
+    // State untuk events - diubah untuk menyimpan semua event
     const [events, setEvents] = useState<Event[]>([]);
-    const [eventsPage, setEventsPage] = useState(1);
-    const [eventsTotalPages, setEventsTotalPages] = useState(1);
-    const [eventsTotal, setEventsTotal] = useState(0);
     const [eventsLoading, setEventsLoading] = useState(false);
-    const [searchEvent, setSearchEvent] = useState('');
     const [dropdownOpened, setDropdownOpened] = useState(false);
+    const [searchEvent, setSearchEvent] = useState('');
 
     const { setValues: setFormValues, values: fv, getInputProps: inputProps, errors: fe, validate: validateForm } = useForm<Checkout>({
         initialValues: {
@@ -612,12 +609,12 @@ export default function Cart() {
         getData();
     }, [orderData]);
 
-    // Fetch events dari API menggunakan instance api
+    // Fetch semua events saat dropdown dibuka
     useEffect(() => {
         if (dropdownOpened) {
-            fetchEvents();
+            fetchAllEvents();
         }
-    }, [eventsPage, searchEvent, dropdownOpened]);
+    }, [dropdownOpened, searchEvent]); // Tambah searchEvent sebagai dependency
 
     const getData = async () => {
         if (!venue && orderData?.slug) {
@@ -639,7 +636,8 @@ export default function Cart() {
         }
     };
 
-    const fetchEvents = async () => {
+    // Fungsi baru untuk fetch semua events
+    const fetchAllEvents = async () => {
         if (!api.defaults.baseURL) {
             console.error('API Base URL is not defined');
             notifications.show({
@@ -653,32 +651,60 @@ export default function Cart() {
         try {
             setEventsLoading(true);
             
-            const response = await api.get('/event', {
+            // Fetch page pertama untuk mendapatkan total pages
+            const firstResponse = await api.get('/event', {
                 params: {
-                    page: eventsPage,
+                    page: 1,
                     search: searchEvent || undefined,
-                    limit: 12 // Sesuaikan dengan limit dari response (12)
+                    limit: 12
                 }
             });
 
-            console.log('Events response:', response.data);
-
-            // Handle response berdasarkan struktur yang diberikan
-            if (response?.data) {
-                // Response memiliki struktur: { message, data: [...], pagination }
-                if (response.data.data && Array.isArray(response.data.data)) {
-                    setEvents(response.data.data);
-                    setEventsTotalPages(response.data.pagination?.last_page || 1);
-                    setEventsTotal(response.data.pagination?.total || 0);
+            let allEvents: Event[] = [];
+            
+            if (firstResponse?.data) {
+                // Ambil data dari response pertama
+                if (firstResponse.data.data && Array.isArray(firstResponse.data.data)) {
+                    allEvents = [...firstResponse.data.data];
+                    
+                    // Dapatkan total pages
+                    const totalPages = firstResponse.data.pagination?.last_page || 1;
+                    
+                    // Jika ada lebih dari 1 halaman, fetch halaman berikutnya
+                    if (totalPages > 1) {
+                        const pagePromises = [];
+                        for (let page = 2; page <= totalPages; page++) {
+                            pagePromises.push(
+                                api.get('/event', {
+                                    params: {
+                                        page: page,
+                                        search: searchEvent || undefined,
+                                        limit: 12
+                                    }
+                                })
+                            );
+                        }
+                        
+                        // Tunggu semua promise selesai
+                        const remainingResponses = await Promise.all(pagePromises);
+                        
+                        // Gabungkan semua data
+                        remainingResponses.forEach(response => {
+                            if (response.data?.data && Array.isArray(response.data.data)) {
+                                allEvents = [...allEvents, ...response.data.data];
+                            }
+                        });
+                    }
                 } 
                 // Jika response.data langsung array
-                else if (Array.isArray(response.data)) {
-                    setEvents(response.data);
-                    setEventsTotalPages(1);
-                } else {
-                    setEvents([]);
+                else if (Array.isArray(firstResponse.data)) {
+                    allEvents = firstResponse.data;
                 }
             }
+            
+            setEvents(allEvents);
+            console.log(`Total events fetched: ${allEvents.length}`);
+            
         } catch (error) {
             console.error('Error fetching events:', error);
             setEvents([]);
@@ -706,20 +732,19 @@ export default function Cart() {
         const subprice = Math.round((paymentOption == 'all' ? venue?.starting_price : venue?.minimum_price) ?? 0);
         const price = paymentOption == 'all' ? count * subprice : subprice;
         const admin = 2000;
-        const ppn = (price + admin) * 0.11;
-        const total = price + admin + ppn;
+        // PPN dihapus
+        const total = price + admin;
         
         const subfullprice = count * Math.round(venue?.starting_price ?? 0);
-        const fullprice = (subfullprice + admin) * 1.11;
+        const fullprice = (subfullprice + admin);
 
         return {
             array: [
                 [`Booking ${count} Hari`, price],
                 ["Biaya Admin", admin],
-                ["PPN (11%)", ppn],
                 ["Total Pembayaran", total],
             ],
-            count, subprice, price, ppn, admin, total, fullprice
+            count, subprice, price, ppn: 0, admin, total, fullprice
         }
     }, [venue, orderData, paymentOption]);
 
@@ -777,11 +802,18 @@ export default function Cart() {
         });
     }
 
-    // Konversi events ke format Select options dengan aman - gunakan 'name' bukan 'title'
+    // Konversi events ke format Select options
     const eventOptions = events.map(event => ({
         value: event.id?.toString() ?? '',
-        label: event.name ?? 'Unknown Event', // Gunakan 'name' dari response
+        label: event.name ?? 'Unknown Event',
     }));
+
+    // Filter events berdasarkan pencarian untuk ditampilkan di dropdown
+    const filteredEvents = searchEvent 
+        ? events.filter(event => 
+            event.name?.toLowerCase().includes(searchEvent.toLowerCase())
+          )
+        : events;
 
     // Cari event yang dipilih
     const selectedEvent = fv.event_id ? events.find(e => e.id === fv.event_id) : null;
@@ -810,7 +842,10 @@ export default function Cart() {
                                     <Select
                                         label="Pilih Event"
                                         placeholder="Cari dan pilih event"
-                                        data={eventOptions}
+                                        data={filteredEvents.map(event => ({
+                                            value: event.id?.toString() ?? '',
+                                            label: event.name ?? 'Unknown Event',
+                                        }))}
                                         value={fv.event_id?.toString() || null}
                                         onChange={(value) => setFormValues({ event_id: value ? parseInt(value, 10) : null })}
                                         error={fe?.event_id}
@@ -821,78 +856,14 @@ export default function Cart() {
                                         onDropdownOpen={() => {
                                             setDropdownOpened(true);
                                             setSearchEvent('');
-                                            setEventsPage(1);
                                         }}
                                         onDropdownClose={() => {
                                             setDropdownOpened(false);
                                         }}
                                         onSearchChange={(search) => {
                                             setSearchEvent(search || '');
-                                            setEventsPage(1);
                                         }}
                                     />
-
-                                    {/* Tampilkan informasi event yang dipilih */}
-                                    {selectedEvent && (
-                                        <Card withBorder p="sm" radius="md" bg="gray.0">
-                                            <Stack gap="xs">
-                                                <Text size="sm" fw={500}>Event Terpilih:</Text>
-                                                <Text size="sm" fw={600}>{selectedEvent.name}</Text>
-                                                {selectedEvent.description && (
-                                                    <Text size="sm">{selectedEvent.description}</Text>
-                                                )}
-                                                <Flex gap="md" wrap="wrap">
-                                                    {selectedEvent.start_date && selectedEvent.end_date && (
-                                                        <Text size="xs" c="dimmed">
-                                                            Tanggal: {moment(selectedEvent.start_date).format('DD MMM YYYY')} - {moment(selectedEvent.end_date).format('DD MMM YYYY')}
-                                                        </Text>
-                                                    )}
-                                                    {selectedEvent.location && (
-                                                        <Text size="xs" c="dimmed">
-                                                            Lokasi: {selectedEvent.location}
-                                                        </Text>
-                                                    )}
-                                                </Flex>
-                                                {selectedEvent.creator_id && (
-                                                    <Text size="xs" c="dimmed">
-                                                        Creator ID: {selectedEvent.creator_id}
-                                                    </Text>
-                                                )}
-                                            </Stack>
-                                        </Card>
-                                    )}
-
-                                    {/* Informasi pagination */}
-                                    {eventsTotal > 0 && (
-                                        <Text size="xs" c="dimmed" ta="center">
-                                            Total {eventsTotal} event
-                                        </Text>
-                                    )}
-
-                                    {/* Pagination untuk event */}
-                                    {eventsTotalPages > 1 && (
-                                        <Flex justify="center" gap={5} mt="xs">
-                                            <Button 
-                                                size="xs" 
-                                                variant="subtle"
-                                                disabled={eventsPage === 1}
-                                                onClick={() => setEventsPage(p => Math.max(1, p - 1))}
-                                            >
-                                                Previous
-                                            </Button>
-                                            <Text size="sm" style={{ alignSelf: 'center' }}>
-                                                Page {eventsPage} of {eventsTotalPages}
-                                            </Text>
-                                            <Button 
-                                                size="xs" 
-                                                variant="subtle"
-                                                disabled={eventsPage === eventsTotalPages}
-                                                onClick={() => setEventsPage(p => Math.min(eventsTotalPages, p + 1))}
-                                            >
-                                                Next
-                                            </Button>
-                                        </Flex>
-                                    )}
                                 </Stack>
                             </DropdownComponent>
 
@@ -941,13 +912,17 @@ export default function Cart() {
                                     </Stack>
                                     <Flex gap={10} className="[&>*]:!flex-grow" wrap="wrap">
                                         <Stack gap={0}>
-                                            <Text size="sm" c="gray">Maks. Kapasitas</Text>
-                                            <Text><NumberFormatter value={venue?.max_capacity || 0} /></Text>
-                                        </Stack>
-                                        <Stack gap={0}>
-                                            <Text size="sm" c="gray">Jumlah Kursi</Text>
-                                            <Text><NumberFormatter value={venue?.seat_capacity || 0} /></Text>
-                                        </Stack>
+    <Text size="sm" c="gray">Maks. Kapasitas</Text>
+    <Text>
+        {venue?.max_capacity?.toLocaleString('id-ID') || 0} Orang
+    </Text>
+</Stack>
+<Stack gap={0}>
+    <Text size="sm" c="gray">Jumlah Kursi</Text>
+    <Text>
+        {venue?.seat_capacity?.toLocaleString('id-ID') || 0} Kursi
+    </Text>
+</Stack>
                                     </Flex>
                                     <Flex justify="space-between" gap={20} align="center">
                                         <Stack gap={0}>
@@ -994,7 +969,7 @@ export default function Cart() {
                                         <Stack gap={0}>
                                             <Text>Pembayaran Penuh</Text>
                                             <Text maw={400} c="gray">
-                                                Bayar Total (<NumberFormatter value={Math.round(venue?.starting_price ?? 0)} />) sekarang.
+                                                Bayar Total (<NumberFormatter value={Math.round(venue?.starting_price ?? 0)} thousandSeparator="." />) sekarang.
                                             </Text>
                                         </Stack>
                                         <Checkbox 
@@ -1010,7 +985,7 @@ export default function Cart() {
                                                 <Stack gap={0}>
                                                     <Text>Bayar Sebagian</Text>
                                                     <Text maw={400} c="gray">
-                                                        Bayar sebagian (<NumberFormatter value={Math.round(venue?.minimum_price ?? 0)} />) sekarang. 
+                                                        Bayar sebagian (<NumberFormatter value={Math.round(venue?.minimum_price ?? 0)} thousandSeparator="." />) sekarang. 
                                                         Lakukan pelunasan sebelum tanggal {moment(orderData?.date_start).format('DD MMMM YYYY')}.
                                                     </Text>
                                                 </Stack>
@@ -1038,7 +1013,8 @@ export default function Cart() {
                                             <Flex justify="space-between" key={i}>
                                                 <Text fw={label === "Total Pembayaran" ? 600 : 400}>{label}</Text>
                                                 <Text fw={label === "Total Pembayaran" ? 600 : 400}>
-                                                    <NumberFormatter value={value} />
+                                                    {/* Perbaikan: Menggunakan thousandSeparator string dan tidak menggunakan decimalSeparator */}
+                                                    <NumberFormatter value={value} prefix="Rp " thousandSeparator="." />
                                                 </Text>
                                             </Flex>
                                         ))}
