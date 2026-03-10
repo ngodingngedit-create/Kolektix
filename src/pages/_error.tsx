@@ -557,7 +557,7 @@ Error.getInitialProps = ({ res, err }) => {
   console.log('err', err);
   console.log('res', res);
   
-  const isMaintenanceMode = true; // Ganti sesuai kebutuhan
+  const isMaintenanceMode = false; // Ganti sesuai kebutuhan
   
   if (isMaintenanceMode) {
     if (res) {

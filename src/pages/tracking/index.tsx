@@ -786,6 +786,7 @@ import {
   AspectRatio,
   Group
 } from "@mantine/core";
+import { useMediaQuery } from '@mantine/hooks';
 import QrScannerTracking from '@/components/QrScannerTracking';
 import { Get, Post } from '@/utils/REST';
 import Cookies from 'js-cookie';
@@ -945,6 +946,9 @@ export default function TrackingPage() {
   const [error, setError] = useState<string | null>(null);
   const [city, setCity] = useState<{ name: string }>();
   const [province, setProvince] = useState<{ name: string }>();
+  
+  // Media query untuk deteksi mobile (max-width: 768px)
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   // Set scanning aktif saat halaman pertama kali dimuat
   useEffect(() => {
@@ -972,7 +976,6 @@ export default function TrackingPage() {
     if (!trackingData?.address?.city_id || !trackingData?.address?.province_id) return;
 
     try {
-      // Get membutuhkan 2 parameter: endpoint dan params (bisa dikosongkan)
       const cityRes = await Get(`city/${trackingData.address.city_id}`, {}) as any;
       if (cityRes?.data) {
         setCity(cityRes.data);
@@ -993,7 +996,6 @@ export default function TrackingPage() {
       setError(null);
       setIsScanning(false);
       
-      // Post dengan 2 parameter: endpoint dan data
       const response = await Post('tracking/order/', { 
         invoice_no: code,
         qr_code: code 
@@ -1001,7 +1003,6 @@ export default function TrackingPage() {
       
       console.log('Tracking response:', response);
       
-      // Sesuaikan dengan struktur response dari tracking/order/
       if (response?.data) {
         setTrackingData(response.data);
         setStep(2);
@@ -1094,16 +1095,14 @@ export default function TrackingPage() {
   const renderTrackingResult = () => {
     if (!trackingData) {
       return (
-        <div className="h-full flex items-center justify-center">
-          <div className="text-center p-8">
-            <ThemeIcon size={80} radius="xl" color="gray" variant="light" className="mb-4 mx-auto">
-              <Icon icon="mdi:truck-delivery" width={40} />
-            </ThemeIcon>
-            <Text size="xl" fw={600} className="mb-2">Belum Ada Data Tracking</Text>
-            <Text size="sm" c="dimmed" className="max-w-sm">
-              Scan QR code atau masukkan kode tracking di sebelah kiri untuk melihat status pengiriman
-            </Text>
-          </div>
+        <div className="flex flex-col items-center justify-center py-8 px-4">
+          <ThemeIcon size={60} radius="xl" color="gray" variant="light" className="mb-3">
+            <Icon icon="mdi:truck-delivery" width={30} />
+          </ThemeIcon>
+          <Text fw={500} className="mb-1">Belum Ada Data Tracking</Text>
+          <Text size="sm" c="dimmed" className="text-center">
+            Scan QR code atau masukkan kode tracking untuk melihat status pengiriman
+          </Text>
         </div>
       );
     }
@@ -1114,20 +1113,20 @@ export default function TrackingPage() {
     const estimatedDelivery = trackingData?.courier?.etd || "-";
 
     return (
-      <ScrollArea h="calc(100vh - 200px)" className="pr-4">
-        <Stack gap="lg">
+      <ScrollArea h="100%" className="pr-2">
+        <Stack gap="md">
           {/* Header Info */}
           <Card withBorder radius="md" className="bg-gradient-to-r from-blue-50 to-white">
-            <Flex justify="space-between" align="center" wrap="wrap" gap="md">
+            <Flex justify="space-between" align="center" wrap="wrap" gap="sm">
               <Box>
                 <Text size="xs" c="dimmed">No. Invoice</Text>
-                <Text fw={700} size="lg">{trackingData.invoice_no}</Text>
+                <Text fw={700} size="md">{trackingData.invoice_no}</Text>
                 <Text size="xs" c="dimmed" mt={4}>
                   {formatDate(trackingData.created_at)}
                 </Text>
               </Box>
               <Badge 
-                size="lg" 
+                size="md" 
                 color={trackingData.payment_status?.toLowerCase() === 'verified' ? 'green' : 'yellow'}
               >
                 {trackingData.payment_status}
@@ -1139,29 +1138,29 @@ export default function TrackingPage() {
           {manifestData && manifestData.length > 0 && (
             <>
               <Card withBorder radius="md">
-                <Grid>
+                <Grid gutter="sm">
                   <Grid.Col span={6}>
                     <Text size="xs" c="dimmed">Kode Tracking</Text>
-                    <Text fw={600}>{trackingNumber}</Text>
+                    <Text fw={600} size="sm">{trackingNumber}</Text>
                   </Grid.Col>
                   <Grid.Col span={6}>
-                    <Text size="xs" c="dimmed">Estimasi Tiba</Text>
-                    <Text fw={600}>{estimatedDelivery}</Text>
+                    <Text size="xs" c="dimmed">Estimasi</Text>
+                    <Text fw={600} size="sm">{estimatedDelivery}</Text>
                     {trackingData.courier?.etd_time && (
-                      <Text size="xs" c="dimmed">Estimasi jam: {trackingData.courier.etd_time}</Text>
+                      <Text size="xs" c="dimmed">{trackingData.courier.etd_time}</Text>
                     )}
                   </Grid.Col>
                 </Grid>
               </Card>
 
               <Card withBorder radius="md">
-                <Flex align="center" gap="md" wrap="wrap">
-                  <ThemeIcon size="xl" radius="md" color="blue" variant="light">
-                    <Icon icon="mdi:truck-fast" width={24} />
+                <Flex align="center" gap="sm">
+                  <ThemeIcon size="lg" radius="md" color="blue" variant="light">
+                    <Icon icon="mdi:truck-fast" width={20} />
                   </ThemeIcon>
                   <Box>
-                    <Text size="sm" c="dimmed">Kurir</Text>
-                    <Text fw={600} className="capitalize">
+                    <Text size="xs" c="dimmed">Kurir</Text>
+                    <Text fw={600} size="sm" className="capitalize">
                       {trackingData.courier?.main || "-"} - {trackingData.courier?.type || "-"}
                     </Text>
                   </Box>
@@ -1170,14 +1169,14 @@ export default function TrackingPage() {
 
               {/* Timeline */}
               <Card withBorder radius="md">
-                <Text fw={600} mb="xl" size="lg">Status Pengiriman</Text>
-                <Timeline active={events.findIndex(t => t.isActive)} bulletSize={24} lineWidth={2}>
+                <Text fw={600} mb="md" size="md">Status Pengiriman</Text>
+                <Timeline active={events.findIndex(t => t.isActive)} bulletSize={20} lineWidth={2}>
                   {events.map((event, index) => (
                     <Timeline.Item
                       key={index}
                       bullet={
                         <ThemeIcon
-                          size={24}
+                          size={20}
                           radius="xl"
                           color={event.isCompleted ? 'green' : event.isActive ? 'blue' : 'gray'}
                           variant={event.isCompleted || event.isActive ? 'filled' : 'light'}
@@ -1188,22 +1187,22 @@ export default function TrackingPage() {
                               event.isActive ? 'mdi:truck' : 
                               'mdi:circle-outline'
                             } 
-                            width={14} 
+                            width={12} 
                           />
                         </ThemeIcon>
                       }
                       title={
-                        <Text fw={600} c={event.isCompleted ? 'green' : event.isActive ? 'blue' : 'dimmed'}>
+                        <Text fw={600} size="sm" c={event.isCompleted ? 'green' : event.isActive ? 'blue' : 'dimmed'}>
                           {event.status}
                         </Text>
                       }
                     >
-                      <Stack gap={4}>
+                      <Stack gap={2}>
                         {event.location && (
                           <Text size="xs" c="dimmed">{event.location}</Text>
                         )}
                         <Text size="sm">{event.description}</Text>
-                        <Text size="xs" c="dimmed" mt={4}>{event.time}</Text>
+                        <Text size="xs" c="dimmed" mt={2}>{event.time}</Text>
                       </Stack>
                     </Timeline.Item>
                   ))}
@@ -1214,55 +1213,50 @@ export default function TrackingPage() {
 
           {/* Detail Pesanan */}
           <Card withBorder radius="md">
-            <Text fw={600} mb="md" size="lg">Detail Pesanan</Text>
+            <Text fw={600} mb="md" size="md">Detail Pesanan</Text>
             
-            <Stack gap="md">
+            <Stack gap="sm">
               {trackingData.detail.map((item) => {
                 const price = parseInt(item.price || "0");
                 const qty = item.qty || 0;
                 const totalPrice = price * qty;
                 
                 return (
-                  <Flex key={item.id} gap="md" className="border-b border-gray-100 pb-3 last:border-0">
+                  <Flex key={item.id} gap="sm" className="border-b border-gray-100 pb-2 last:border-0">
                     <Image 
                       src={item.product?.images?.[0]?.image_url || "/placeholder.png"} 
-                      w={60} 
-                      h={60} 
+                      w={50} 
+                      h={50} 
                       radius="md"
                       className="bg-gray-100"
                     />
                     <Box style={{ flex: 1 }}>
-                      <Text fw={600}>{item.product?.product_name || "-"}</Text>
-                      <Flex justify="space-between" mt="xs">
-                        <Text size="sm">{qty} x <NumberFormatter value={price} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
-                        <Text fw={600}><NumberFormatter value={totalPrice} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+                      <Text fw={600} size="sm">{item.product?.product_name || "-"}</Text>
+                      <Flex justify="space-between" mt={4}>
+                        <Text size="xs">{qty} x <NumberFormatter value={price} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+                        <Text fw={600} size="sm"><NumberFormatter value={totalPrice} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
                       </Flex>
-                      {item.order_notes && (
-                        <Text size="xs" c="dimmed" fs="italic" mt={2}>
-                          Catatan: {item.order_notes}
-                        </Text>
-                      )}
                     </Box>
                   </Flex>
                 );
               })}
             </Stack>
 
-            <Divider my="md" />
+            <Divider my="sm" />
 
             {/* Total */}
             <Stack gap="xs">
               <Flex justify="space-between">
-                <Text c="dimmed">Subtotal Produk</Text>
-                <Text fw={500}><NumberFormatter value={trackingData.total_price || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+                <Text size="sm" c="dimmed">Subtotal Produk</Text>
+                <Text size="sm" fw={500}><NumberFormatter value={trackingData.total_price || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
               </Flex>
               <Flex justify="space-between">
-                <Text c="dimmed">Biaya Admin</Text>
-                <Text fw={500}><NumberFormatter value={trackingData.admin_fee || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+                <Text size="sm" c="dimmed">Biaya Admin</Text>
+                <Text size="sm" fw={500}><NumberFormatter value={trackingData.admin_fee || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
               </Flex>
               <Flex justify="space-between">
-                <Text c="dimmed">Biaya Pengiriman</Text>
-                <Text fw={500}><NumberFormatter value={trackingData.delivery_price || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
+                <Text size="sm" c="dimmed">Biaya Pengiriman</Text>
+                <Text size="sm" fw={500}><NumberFormatter value={trackingData.delivery_price || 0} thousandSeparator="." decimalSeparator="," prefix="Rp " /></Text>
               </Flex>
               <Divider />
               <Flex justify="space-between">
@@ -1274,25 +1268,25 @@ export default function TrackingPage() {
 
           {/* Alamat Pengiriman */}
           <Card withBorder radius="md">
-            <Text fw={600} mb="md" size="lg">Alamat Pengiriman</Text>
+            <Text fw={600} mb="md" size="md">Alamat Pengiriman</Text>
             <Stack gap="xs">
               <Flex align="center" gap="sm">
                 <ThemeIcon size="sm" radius="xl" color="blue" variant="light">
-                  <Icon icon="mdi:user" width={14} />
+                  <Icon icon="mdi:user" width={12} />
                 </ThemeIcon>
-                <Text>{trackingData.address.nama_penerima}</Text>
+                <Text size="sm">{trackingData.address.nama_penerima}</Text>
               </Flex>
               <Flex align="center" gap="sm">
                 <ThemeIcon size="sm" radius="xl" color="blue" variant="light">
-                  <Icon icon="mdi:phone" width={14} />
+                  <Icon icon="mdi:phone" width={12} />
                 </ThemeIcon>
-                <Text>{trackingData.address.phone || "-"}</Text>
+                <Text size="sm">{trackingData.address.phone || "-"}</Text>
               </Flex>
               <Flex align="center" gap="sm">
                 <ThemeIcon size="sm" radius="xl" color="blue" variant="light">
-                  <Icon icon="mdi:map-marker" width={14} />
+                  <Icon icon="mdi:map-marker" width={12} />
                 </ThemeIcon>
-                <Text>
+                <Text size="sm">
                   {province?.name || "-"}, {city?.name || "-"}, {trackingData.address.zipcode}
                   <br />
                   {trackingData.address.address_detail}
@@ -1305,9 +1299,9 @@ export default function TrackingPage() {
             variant="light" 
             color="blue" 
             onClick={handleScanAgain}
-            leftSection={<Icon icon="mdi:refresh" width={18} />}
+            leftSection={<Icon icon="mdi:refresh" width={16} />}
             fullWidth
-            size="md"
+            size="sm"
           >
             Scan Lagi
           </Button>
@@ -1318,168 +1312,303 @@ export default function TrackingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Container size="xl" className="h-full pt-20 pb-6">
-        {/* Header dengan gap dari navbar */}
-        <div className="mb-6">
-          <Flex align="center" gap="md">
-            <ThemeIcon size={40} radius="md" color="blue" variant="light">
-              <Icon icon="mdi:truck-fast" width={24} />
-            </ThemeIcon>
-            <Box>
-              <Title order={2} className="!text-2xl font-semibold">Lacak Pesanan</Title>
-              <Text size="sm" c="dimmed">
-                Scan QR atau masukkan kode tracking untuk melihat status pengiriman
-              </Text>
-            </Box>
-          </Flex>
-        </div>
+      <Container size="xl" className="px-4 pt-20 pb-4">
+        {/* Header */}
+        <Flex align="center" gap="sm" className="mb-6">
+          <ThemeIcon size={40} radius="md" color="blue" variant="light">
+            <Icon icon="mdi:truck-fast" width={24} />
+          </ThemeIcon>
+          <Box>
+            <Title order={2} className="!text-2xl font-semibold">Lacak Pesanan</Title>
+            <Text size="sm" c="dimmed">
+              Scan QR atau masukkan kode tracking untuk melihat status pengiriman
+            </Text>
+          </Box>
+        </Flex>
 
-        {/* Split Screen Layout */}
-        <Grid gutter="md" className="h-[calc(100vh-240px)]">
-          {/* Left Side - Scanner/Input */}
-          <Grid.Col span={6}>
-            <Card shadow="sm" radius="lg" withBorder className="h-full flex flex-col">
-              <Card.Section withBorder inheritPadding py="md">
-                <Flex gap="md" justify="center">
-                  <Button
-                    variant={selected === 'qr' ? 'filled' : 'light'}
-                    color="blue"
-                    leftSection={<FontAwesomeIcon icon={faQrcode} />}
-                    onClick={() => {
-                      setSelected('qr');
-                      setStep(0);
-                      setIsScanning(true);
-                      setTrackingData(null);
-                      setError(null);
-                    }}
-                    radius="md"
-                    style={{ flex: 1 }}
-                  >
-                    Scan QR
-                  </Button>
-                  <Button
-                    variant={selected === 'manual' ? 'filled' : 'light'}
-                    color="blue"
-                    leftSection={<FontAwesomeIcon icon={faKeyboard} />}
-                    onClick={() => {
-                      setSelected('manual');
-                      setStep(0);
-                      setIsScanning(false);
-                      setTrackingData(null);
-                      setError(null);
-                    }}
-                    radius="md"
-                    style={{ flex: 1 }}
-                  >
-                    Input Manual
-                  </Button>
-                </Flex>
-              </Card.Section>
+        {/* Conditional Layout: Desktop 50-50, Mobile Stack */}
+        {isMobile ? (
+          /* Mobile Layout: Scanner di atas, Result di bawah */
+          <Stack gap="md">
+            {/* Scanner Section */}
+            <Card shadow="sm" radius="lg" withBorder className="w-full">
+              {/* Toggle Buttons */}
+              <Flex gap="xs" className="mb-3">
+                <Button
+                  variant={selected === 'qr' ? 'filled' : 'light'}
+                  color="blue"
+                  size="sm"
+                  leftSection={<FontAwesomeIcon icon={faQrcode} />}
+                  onClick={() => {
+                    setSelected('qr');
+                    setStep(0);
+                    setIsScanning(true);
+                    setTrackingData(null);
+                    setError(null);
+                  }}
+                  style={{ flex: 1 }}
+                  radius="md"
+                >
+                  Scan QR
+                </Button>
+                <Button
+                  variant={selected === 'manual' ? 'filled' : 'light'}
+                  color="blue"
+                  size="sm"
+                  leftSection={<FontAwesomeIcon icon={faKeyboard} />}
+                  onClick={() => {
+                    setSelected('manual');
+                    setStep(0);
+                    setIsScanning(false);
+                    setTrackingData(null);
+                    setError(null);
+                  }}
+                  style={{ flex: 1 }}
+                  radius="md"
+                >
+                  Manual
+                </Button>
+              </Flex>
 
-              <div className="p-4 flex-1">
-                {selected === 'qr' && (
-                  <div className="h-full flex flex-col">
-                    <div className="flex-1 relative bg-black rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
-                      {/* QrScannerTracking langsung aktif */}
-                      <div className="absolute inset-0">
-                        <QrScannerTracking
-                          isOpen={isScanning}
-                          step={step}
-                          setStep={setStep}
-                          setData={handleScan}
-                          scanType="merchandise"
-                        />
-                      </div>
-                      
-                      {/* Frame scanner minimalis */}
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="relative w-64 h-64">
-                          <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-white/80 rounded-tl-2xl"></div>
-                          <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-white/80 rounded-tr-2xl"></div>
-                          <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-white/80 rounded-bl-2xl"></div>
-                          <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-white/80 rounded-br-2xl"></div>
-                          <div className="absolute left-4 right-4 h-0.5 bg-blue-500 animate-scan rounded-full shadow-lg"></div>
-                        </div>
-                      </div>
-                      
-                      <div className="absolute bottom-4 left-0 right-0 text-center">
-                        <Text size="sm" c="white" className="bg-black/50 py-1 px-3 inline-block rounded-full">
-                          Arahkan kamera ke QR code
-                        </Text>
-                      </div>
+              {/* Scanner / Input Content */}
+              {selected === 'qr' && (
+                <div className="relative bg-black rounded-lg overflow-hidden" style={{ height: '250px' }}>
+                  <div className="absolute inset-0">
+                    <QrScannerTracking
+                      isOpen={isScanning}
+                      step={step}
+                      setStep={setStep}
+                      setData={handleScan}
+                      scanType="merchandise"
+                    />
+                  </div>
+                  
+                  {/* Scanner Frame */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="relative w-48 h-48">
+                      <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/80 rounded-tl-xl"></div>
+                      <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white/80 rounded-tr-xl"></div>
+                      <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white/80 rounded-bl-xl"></div>
+                      <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/80 rounded-br-xl"></div>
+                      <div className="absolute left-4 right-4 h-0.5 bg-blue-500 animate-scan rounded-full shadow-lg"></div>
                     </div>
                   </div>
-                )}
-
-                {selected === 'manual' && (
-                  <div className="border rounded-xl bg-gray-50 p-6 max-w-md mx-auto">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          No. Invoice / Kode Tracking
-                        </label>
-                        <input
-                          type="text"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                          placeholder="Contoh: INV/202403/12345"
-                          value={manualInputValue}
-                          onChange={(e) => setManualInputValue(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
-                          disabled={loading}
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Masukkan no. invoice atau kode tracking
-                        </p>
-                      </div>
-                      <button
-                        onClick={handleManualSubmit}
-                        disabled={!manualInputValue.trim() || loading}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {loading ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <FontAwesomeIcon icon={faSpinner} spin />
-                            Memproses...
-                          </span>
-                        ) : (
-                          'Lacak Pesanan'
-                        )}
-                      </button>
-                    </div>
+                  
+                  <div className="absolute bottom-2 left-0 right-0 text-center">
+                    <Text size="xs" c="white" className="bg-black/50 py-1 px-2 inline-block rounded-full">
+                      Arahkan ke QR code
+                    </Text>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Error Mesage */}
-                {error && (
-                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <div className="flex items-center gap-2 text-red-700">
-                      <Icon icon="mdi:alert-circle" width={18} />
-                      <span className="text-sm font-medium">{error}</span>
+              {selected === 'manual' && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        No. Invoice / Kode Tracking
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Contoh: INV/202403/12345"
+                        value={manualInputValue}
+                        onChange={(e) => setManualInputValue(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
+                        disabled={loading}
+                      />
                     </div>
+                    <button
+                      onClick={handleManualSubmit}
+                      disabled={!manualInputValue.trim() || loading}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition disabled:opacity-50"
+                    >
+                      {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <FontAwesomeIcon icon={faSpinner} spin />
+                          Memproses...
+                        </span>
+                      ) : (
+                        'Lacak Pesanan'
+                      )}
+                    </button>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {error && (
+                <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-red-700">
+                    <Icon icon="mdi:alert-circle" width={16} />
+                    <span className="text-xs font-medium">{error}</span>
+                  </div>
+                </div>
+              )}
             </Card>
-          </Grid.Col>
 
-          {/* Right Side - Tracking Result */}
-          <Grid.Col span={6}>
-            <Card shadow="sm" radius="lg" withBorder className="h-full flex flex-col">
-              <Card.Section withBorder inheritPadding py="md">
-                <Flex align="center" gap="sm">
-                  <ThemeIcon size="md" radius="xl" color="blue" variant="light">
-                    <Icon icon="mdi:truck-delivery" width={16} />
-                  </ThemeIcon>
-                  <Text fw={600}>Status Pengiriman</Text>
-                </Flex>
-              </Card.Section>
+            {/* Result Section */}
+            <Card shadow="sm" radius="lg" withBorder className="w-full min-h-[400px]">
+              <Flex align="center" gap="xs" className="mb-3">
+                <ThemeIcon size="sm" radius="xl" color="blue" variant="light">
+                  <Icon icon="mdi:truck-delivery" width={12} />
+                </ThemeIcon>
+                <Text fw={600} size="sm">Status Pengiriman</Text>
+              </Flex>
 
-              <div className="p-4 flex-1">
+              <div style={{ height: trackingData ? '500px' : 'auto' }}>
                 {renderTrackingResult()}
               </div>
             </Card>
-          </Grid.Col>
-        </Grid>
+          </Stack>
+        ) : (
+          /* Desktop Layout: 50-50 Split Screen */
+          <Grid gutter="md" className="h-[calc(100vh-240px)]">
+            {/* Left Side - Scanner/Input */}
+            <Grid.Col span={6}>
+              <Card shadow="sm" radius="lg" withBorder className="h-full flex flex-col">
+                <Card.Section withBorder inheritPadding py="md">
+                  <Flex gap="md" justify="center">
+                    <Button
+                      variant={selected === 'qr' ? 'filled' : 'light'}
+                      color="blue"
+                      leftSection={<FontAwesomeIcon icon={faQrcode} />}
+                      onClick={() => {
+                        setSelected('qr');
+                        setStep(0);
+                        setIsScanning(true);
+                        setTrackingData(null);
+                        setError(null);
+                      }}
+                      radius="md"
+                      style={{ flex: 1 }}
+                    >
+                      Scan QR
+                    </Button>
+                    <Button
+                      variant={selected === 'manual' ? 'filled' : 'light'}
+                      color="blue"
+                      leftSection={<FontAwesomeIcon icon={faKeyboard} />}
+                      onClick={() => {
+                        setSelected('manual');
+                        setStep(0);
+                        setIsScanning(false);
+                        setTrackingData(null);
+                        setError(null);
+                      }}
+                      radius="md"
+                      style={{ flex: 1 }}
+                    >
+                      Input Manual
+                    </Button>
+                  </Flex>
+                </Card.Section>
+
+                <div className="p-4 flex-1">
+                  {selected === 'qr' && (
+                    <div className="h-full flex flex-col">
+                      <div className="flex-1 relative bg-black rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
+                        <div className="absolute inset-0">
+                          <QrScannerTracking
+                            isOpen={isScanning}
+                            step={step}
+                            setStep={setStep}
+                            setData={handleScan}
+                            scanType="merchandise"
+                          />
+                        </div>
+                        
+                        {/* Frame scanner minimalis */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="relative w-64 h-64">
+                            <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-white/80 rounded-tl-2xl"></div>
+                            <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-white/80 rounded-tr-2xl"></div>
+                            <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-white/80 rounded-bl-2xl"></div>
+                            <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-white/80 rounded-br-2xl"></div>
+                            <div className="absolute left-4 right-4 h-0.5 bg-blue-500 animate-scan rounded-full shadow-lg"></div>
+                          </div>
+                        </div>
+                        
+                        <div className="absolute bottom-4 left-0 right-0 text-center">
+                          <Text size="sm" c="white" className="bg-black/50 py-1 px-3 inline-block rounded-full">
+                            Arahkan kamera ke QR code
+                          </Text>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {selected === 'manual' && (
+                    <div className="border rounded-xl bg-gray-50 p-6 max-w-md mx-auto">
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            No. Invoice / Kode Tracking
+                          </label>
+                          <input
+                            type="text"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                            placeholder="Contoh: INV/202403/12345"
+                            value={manualInputValue}
+                            onChange={(e) => setManualInputValue(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
+                            disabled={loading}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Masukkan no. invoice atau kode tracking
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleManualSubmit}
+                          disabled={!manualInputValue.trim() || loading}
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <FontAwesomeIcon icon={faSpinner} spin />
+                              Memproses...
+                            </span>
+                          ) : (
+                            'Lacak Pesanan'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Error Mesage */}
+                  {error && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-red-700">
+                        <Icon icon="mdi:alert-circle" width={18} />
+                        <span className="text-sm font-medium">{error}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </Grid.Col>
+
+            {/* Right Side - Tracking Result */}
+            <Grid.Col span={6}>
+              <Card shadow="sm" radius="lg" withBorder className="h-full flex flex-col">
+                <Card.Section withBorder inheritPadding py="md">
+                  <Flex align="center" gap="sm">
+                    <ThemeIcon size="md" radius="xl" color="blue" variant="light">
+                      <Icon icon="mdi:truck-delivery" width={16} />
+                    </ThemeIcon>
+                    <Text fw={600}>Status Pengiriman</Text>
+                  </Flex>
+                </Card.Section>
+
+                <div className="p-4 flex-1">
+                  {renderTrackingResult()}
+                </div>
+              </Card>
+            </Grid.Col>
+          </Grid>
+        )}
       </Container>
 
       <style jsx>{`

@@ -1758,7 +1758,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
                 />
                 <NavLink href="/event" c="gray.1" label="Event" leftSection={<Icon icon="tabler:calendar-event" className="text-[24px]" />} />
                 <NavLink href="/merchandise" c="gray.1" label="Merchandise" leftSection={<Icon icon="tabler:shopping-bag" className="text-[24px]" />} />
-                
+                <NavLink href="/tracking" c="gray.1" label="Tracking" leftSection={<Icon icon="tabler:truck" className="text-[24px]" />} />
                 {showTalentVenue && (
                   <>
                     <NavLink href="/talent" c="gray.1" label="Talent" leftSection={<Icon icon="tabler:user" className="text-[24px]" />} />
