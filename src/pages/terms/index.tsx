@@ -200,22 +200,38 @@ const PrivacyPolicyPage: React.FC = () => {
 
   useEffect(() => {
     const handleScroll = () => {
+      const isMobile = window.innerWidth < 768;
       let currentActiveId = activeItem;
       let minDistance = Infinity;
 
-      const container = document.getElementById('main-scroll-container');
-      if (!container) return;
-
-      const containerTop = container.getBoundingClientRect().top;
-
-      for (const section of sections) {
-        const element = document.getElementById(section.id);
-        if (element) {
-          // Hitung jarak relatif elemen terhadap atas container yang dapat di-scroll
-          const distance = Math.abs(element.getBoundingClientRect().top - containerTop - 100);
-          if (distance < minDistance) {
-            minDistance = distance;
-            currentActiveId = section.id;
+      if (isMobile) {
+        // Mobile: scroll terjadi di window
+        const scrollY = window.scrollY;
+        const offset = 65 + 72; // tinggi navbar + sticky select bar
+        for (const section of sections) {
+          const element = document.getElementById(section.id);
+          if (element) {
+            const elementTop = element.getBoundingClientRect().top + scrollY;
+            const distance = Math.abs(scrollY + offset - elementTop);
+            if (distance < minDistance) {
+              minDistance = distance;
+              currentActiveId = section.id;
+            }
+          }
+        }
+      } else {
+        // Desktop: scroll terjadi di container
+        const container = document.getElementById('main-scroll-container');
+        if (!container) return;
+        const containerTop = container.getBoundingClientRect().top;
+        for (const section of sections) {
+          const element = document.getElementById(section.id);
+          if (element) {
+            const distance = Math.abs(element.getBoundingClientRect().top - containerTop - 100);
+            if (distance < minDistance) {
+              minDistance = distance;
+              currentActiveId = section.id;
+            }
           }
         }
       }
@@ -225,26 +241,41 @@ const PrivacyPolicyPage: React.FC = () => {
       }
     };
 
-    const container = document.getElementById('main-scroll-container');
-    if (container) {
-      container.addEventListener('scroll', handleScroll);
-      return () => container.removeEventListener('scroll', handleScroll);
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      window.addEventListener('scroll', handleScroll);
+      return () => window.removeEventListener('scroll', handleScroll);
+    } else {
+      const container = document.getElementById('main-scroll-container');
+      if (container) {
+        container.addEventListener('scroll', handleScroll);
+        return () => container.removeEventListener('scroll', handleScroll);
+      }
     }
   }, [activeItem, sections]);
 
   const scrollToSection = (id: string) => {
     setActiveItem(id);
     const element = document.getElementById(id);
-    const container = document.getElementById('main-scroll-container');
+    const isMobile = window.innerWidth < 768;
 
-    if (element && container) {
-      // Hitung posisi elemen relatif ke dalam container scroll
-      const containerTop = container.getBoundingClientRect().top;
-      const elementTop = element.getBoundingClientRect().top;
-      const currentScrollToken = container.scrollTop;
-
-      const targetScroll = currentScrollToken + (elementTop - containerTop) - 40;
-      container.scrollTo({ top: targetScroll, behavior: 'smooth' });
+    if (element) {
+      if (isMobile) {
+        // Mobile: scroll window, offset = navbar + sticky select bar
+        const stickyOffset = 65 + 72;
+        const elementTop = element.getBoundingClientRect().top + window.scrollY - stickyOffset;
+        window.scrollTo({ top: elementTop, behavior: 'smooth' });
+      } else {
+        // Desktop: scroll container
+        const container = document.getElementById('main-scroll-container');
+        if (container) {
+          const containerTop = container.getBoundingClientRect().top;
+          const elementTop = element.getBoundingClientRect().top;
+          const currentScrollTop = container.scrollTop;
+          const targetScroll = currentScrollTop + (elementTop - containerTop) - 40;
+          container.scrollTo({ top: targetScroll, behavior: 'smooth' });
+        }
+      }
     }
   };
 
@@ -277,20 +308,20 @@ const PrivacyPolicyPage: React.FC = () => {
         </div>
 
         {/* Konten Utama Edge-to-Edge */}
-        <div className="flex-1 w-full bg-white flex flex-col md:flex-row md:overflow-hidden border-t-4 border-[#0B387C]/10">
+        <div className="flex-1 w-full bg-white flex flex-col md:flex-row md:overflow-hidden border-t-4 border-[#02255A]">
 
           {/* Navigasi Sidebar - STICKY di mobile agar tetap kelihatan saat konten di-scroll, fixed panel di desktop */}
           <aside className="w-full md:w-1/3 lg:w-[28%] bg-white md:bg-slate-50 sticky top-[65px] md:static md:border-r border-b border-slate-200 md:border-b-0 flex-none md:flex-shrink-0 h-auto md:h-full no-scrollbar z-20 shadow-[0_-8px_0_8px_white,0_2px_6px_rgba(0,0,0,0.06)] md:shadow-none">
-            <div className="py-4 px-5 md:py-8 md:px-12">
+            <div className="py-4 px-5 md:pt-7 md:pb-8 md:px-12">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 md:mb-6">Daftar Isi Kebijakan</h3>
 
               {/* Desktop Nav */}
-              <ul className="hidden md:flex flex-col gap-2 relative list-none m-0 p-0">
+              <ul className="hidden md:flex flex-col gap-1 relative list-none m-0 p-0">
                 {sections.map((item) => (
                   <li key={item.id} className="relative z-10">
                     <button
                       onClick={() => scrollToSection(item.id)}
-                      className={`w-full text-left py-3 px-4 pl-8 transition-all rounded-xl text-[14px] flex items-center relative overflow-hidden group ${activeItem === item.id
+                      className={`w-full text-left py-2 px-4 pl-8 transition-all rounded-xl text-[14px] flex items-center relative overflow-hidden group ${activeItem === item.id
                         ? 'text-[#0B387C] font-bold bg-blue-50/80 shadow-sm ring-1 ring-blue-100'
                         : 'text-slate-500 hover:text-[#0B387C] hover:bg-slate-100/50 font-medium'
                         }`}
