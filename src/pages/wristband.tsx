@@ -43,6 +43,13 @@ const Wristband = () => {
     const totalQty = orderItems.reduce((s, i) => s + i.qty, 0);
     const totalPrice = orderItems.reduce((s, i) => s + i.subtotal, 0);
 
+    // Auto-close detail drawer when cart becomes empty
+    useEffect(() => {
+        if (orderItems.length === 0) {
+            setShowDetail(false);
+        }
+    }, [orderItems]);
+
     const formatRp = (n: number) =>
         new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
 
