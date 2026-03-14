@@ -327,24 +327,29 @@ const PrivacyPolicyPage: React.FC = () => {
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 md:mb-6">Daftar Isi Kebijakan</h3>
 
               {/* Desktop Nav */}
-              <ul className="hidden md:flex flex-col gap-1 relative list-none m-0 p-0">
-                {sections.map((item) => (
-                  <li key={item.id} className="relative z-10">
-                    <button
-                      onClick={() => scrollToSection(item.id)}
-                      className={`w-full text-left py-2 px-4 pl-8 transition-all rounded-xl text-[14px] flex items-center relative overflow-hidden group ${activeItem === item.id
-                        ? 'text-[#0B387C] font-bold bg-blue-50/80 shadow-sm ring-1 ring-blue-100'
-                        : 'text-slate-500 hover:text-[#0B387C] hover:bg-slate-100/50 font-medium'
-                        }`}
-                    >
-                      {activeItem === item.id && (
-                        <div className="absolute left-3 w-[8px] h-[8px] rounded-full transition-colors bg-[#0B387C]"></div>
-                      )}
-                      {item.title}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <div className="hidden md:block">
+                <ul
+                  className="flex flex-col gap-1 relative list-none m-0 p-0 sidebar-nav-scroll"
+                  style={{ maxHeight: sections.length > 3 ? 'calc(3 * 40px + 2 * 4px)' : 'none', overflowY: sections.length > 3 ? 'auto' : 'visible' }}
+                >
+                  {sections.map((item) => (
+                    <li key={item.id} className="relative z-10">
+                      <button
+                        onClick={() => scrollToSection(item.id)}
+                        className={`w-full text-left py-2 px-4 pl-8 transition-all rounded-xl text-[14px] flex items-center relative overflow-hidden group ${activeItem === item.id
+                          ? 'text-[#0B387C] font-bold bg-blue-50/80 shadow-sm ring-1 ring-blue-100'
+                          : 'text-slate-500 hover:text-[#0B387C] hover:bg-slate-100/50 font-medium'
+                          }`}
+                      >
+                        {activeItem === item.id && (
+                          <div className="absolute left-3 w-[8px] h-[8px] rounded-full transition-colors bg-[#0B387C]"></div>
+                        )}
+                        {item.title}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
               {/* Mobile Select */}
               <div className="md:hidden">
@@ -411,6 +416,20 @@ const PrivacyPolicyPage: React.FC = () => {
         .no-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
+        }
+
+        .sidebar-nav-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar-thumb {
+          background-color: #cbd5e1;
+          border-radius: 10px;
+        }
+        .sidebar-nav-scroll::-webkit-scrollbar-thumb:hover {
+          background-color: #94a3b8;
         }
       `}</style>
     </>

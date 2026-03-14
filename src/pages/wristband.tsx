@@ -379,7 +379,7 @@ const Wristband = () => {
             <div className="bg-[#02255A] font-sans w-full md:h-screen md:pt-[72px] pt-[72px] flex flex-col md:overflow-hidden">
 
                 {/* Hero Banner */}
-                <div className="bg-gradient-to-r from-[#02255A] via-[#0B387C] to-[#184a96] py-6 px-5 md:py-8 md:px-8 relative overflow-hidden shrink-0 shadow-md z-10">
+                {/* <div className="bg-gradient-to-r from-[#02255A] via-[#0B387C] to-[#184a96] py-6 px-5 md:py-8 md:px-8 relative overflow-hidden shrink-0 shadow-md z-10">
                     <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
                     <div className="absolute bottom-0 left-10 w-64 h-64 bg-blue-400/10 rounded-full blur-2xl translate-y-1/3"></div>
                     <div className="w-full mx-auto relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6 px-0 md:px-12">
@@ -393,7 +393,7 @@ const Wristband = () => {
                             Terakhir diperbarui: <span className="text-white font-semibold">21 Mei 2018</span>
                         </div>
                     </div>
-                </div>
+                </div> */}
 
                 {/* Main Content */}
                 <div className="flex-1 w-full bg-white flex flex-col md:flex-row md:overflow-hidden border-t-4 border-[#02255A]">
@@ -402,7 +402,11 @@ const Wristband = () => {
                     <aside className="w-full md:w-1/3 lg:w-[28%] bg-white md:bg-slate-50 sticky top-[65px] md:static md:border-r border-b border-slate-200 md:border-b-0 flex-none md:flex-shrink-0 h-auto md:h-full no-scrollbar z-20 shadow-[0_-8px_0_8px_white,0_2px_6px_rgba(0,0,0,0.06)] md:shadow-none">
                         <div className="py-4 px-5 md:pt-7 md:pb-8 md:px-12">
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 md:mb-6">Daftar Isi</h3>
-                            <ul className="hidden md:flex flex-col gap-1 relative list-none m-0 p-0">
+                            <div className="hidden md:block">
+                              <ul
+                                className="flex flex-col gap-1 relative list-none m-0 p-0 sidebar-nav-scroll"
+                                style={{ maxHeight: sections.length > 3 ? 'calc(3 * 40px + 2 * 4px)' : 'none', overflowY: sections.length > 3 ? 'auto' : 'visible' }}
+                              >
                                 {sections.map((item) => (
                                     <li key={item.id} className="relative z-10">
                                         <button
@@ -414,7 +418,8 @@ const Wristband = () => {
                                         </button>
                                     </li>
                                 ))}
-                            </ul>
+                              </ul>
+                            </div>
                             <div className="md:hidden">
                                 <select
                                     value={activeItem}
@@ -446,30 +451,38 @@ const Wristband = () => {
                         </div>
 
                         {/* ── BOTTOM BAR — fixed, above mobile site nav ── */}
-                        <div className={`fixed bottom-[60px] md:bottom-0 left-0 right-0 z-[60] bg-[#e8edf6] border-t border-blue-200/60 shadow-[0_-4px_20px_rgba(2,37,90,0.10)] transition-all duration-300 ease-in-out overflow-hidden ${totalQty > 0 ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0 pointer-events-none border-t-0'}`}>
+                        <div className="fixed bottom-[60px] md:bottom-0 left-0 right-0 z-[60] bg-[#e8edf6] border-t border-blue-200/60 shadow-[0_-4px_20px_rgba(2,37,90,0.10)]">
                             <div className="w-full px-6 py-2.5 flex items-center justify-between gap-3">
                                 {/* Left: totals */}
                                 <div className="min-w-0 leading-tight">
-                                    <p className="text-[11px] text-slate-500 leading-none whitespace-nowrap">{totalQty} Gelang</p>
-                                    <p className="text-[15px] md:text-[17px] font-extrabold text-[#02255A] leading-tight mt-0.5 whitespace-nowrap">{formatRp(totalPrice)}</p>
+                                    {totalQty > 0 ? (
+                                        <>
+                                            <p className="text-[11px] text-slate-500 leading-none whitespace-nowrap">{totalQty} Gelang</p>
+                                            <p className="text-[15px] md:text-[17px] font-extrabold text-[#02255A] leading-tight mt-0.5 whitespace-nowrap">{formatRp(totalPrice)}</p>
+                                        </>
+                                    ) : (
+                                        <p className="text-[13px] text-slate-400 font-medium">Tambahkan gelang ke pesanan</p>
+                                    )}
                                 </div>
 
                                 {/* Right: Detail + Beli */}
                                 <div className="flex items-center gap-2 shrink-0">
-                                    <button
-                                        id="detail-btn"
-                                        onClick={() => setShowDetail((v) => !v)}
-                                        className="flex items-center gap-1 text-[#0B387C] font-semibold text-[13px] hover:text-[#02255A] transition-colors"
-                                    >
-                                        Detail
-                                        <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
-                                            {orderItems.length}
-                                        </span>
-                                        <Icon
-                                            icon={showDetail ? 'material-symbols:keyboard-arrow-down-rounded' : 'material-symbols:keyboard-arrow-up-rounded'}
-                                            className="text-[16px] text-[#0B387C]"
-                                        />
-                                    </button>
+                                    {totalQty > 0 && (
+                                        <button
+                                            id="detail-btn"
+                                            onClick={() => setShowDetail((v) => !v)}
+                                            className="flex items-center gap-1 text-[#0B387C] font-semibold text-[13px] hover:text-[#02255A] transition-colors"
+                                        >
+                                            Detail
+                                            <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                                                {orderItems.length}
+                                            </span>
+                                            <Icon
+                                                icon={showDetail ? 'material-symbols:keyboard-arrow-down-rounded' : 'material-symbols:keyboard-arrow-up-rounded'}
+                                                className="text-[16px] text-[#0B387C]"
+                                            />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => {
                                             if (orderItems.length === 0) {
@@ -585,6 +598,10 @@ const Wristband = () => {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .sidebar-nav-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-nav-scroll::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-nav-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        .sidebar-nav-scroll::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
       `}</style>
         </>
     );
