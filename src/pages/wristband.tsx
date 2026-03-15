@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { Icon } from "@iconify/react/dist/iconify.js";
+import Footer from '../components/FooterComponent';
 import bg1 from '../assets/images/Foto=1.png';
 import bg2 from '../assets/images/Foto=4.png';
 
@@ -376,7 +377,7 @@ const Wristband = () => {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                 <title>Tiket Gelang | Kolektix</title>
             </Head>
-            <div className="bg-[#02255A] font-sans w-full md:h-screen md:pt-[72px] pt-[72px] flex flex-col md:overflow-hidden">
+            <div className="bg-[#02255A] font-sans w-full pt-[72px] flex flex-col">
 
                 {/* Hero Banner */}
                 {/* <div className="bg-gradient-to-r from-[#02255A] via-[#0B387C] to-[#184a96] py-6 px-5 md:py-8 md:px-8 relative overflow-hidden shrink-0 shadow-md z-10">
@@ -396,10 +397,10 @@ const Wristband = () => {
                 </div> */}
 
                 {/* Main Content */}
-                <div className="flex-1 w-full bg-white flex flex-col md:flex-row md:overflow-hidden border-t-4 border-[#02255A]">
+                <div className="flex-1 w-full bg-white flex flex-col md:flex-row border-t-4 border-[#02255A]">
 
                     {/* Sidebar */}
-                    <aside className="w-full md:w-1/3 lg:w-[28%] bg-white md:bg-slate-50 sticky top-[65px] md:static md:border-r border-b border-slate-200 md:border-b-0 flex-none md:flex-shrink-0 h-auto md:h-full no-scrollbar z-20 shadow-[0_-8px_0_8px_white,0_2px_6px_rgba(0,0,0,0.06)] md:shadow-none">
+                    <aside className="w-full md:w-1/3 lg:w-[28%] bg-white md:bg-slate-50 sticky top-[65px] md:top-[72px] md:self-start border-b border-slate-200 md:border-b-0 flex-none md:flex-shrink-0 h-auto no-scrollbar z-20 shadow-[0_-8px_0_8px_white,0_2px_6px_rgba(0,0,0,0.06)] md:shadow-none">
                         <div className="py-4 px-5 md:pt-7 md:pb-8 md:px-12">
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 md:mb-6">Daftar Isi</h3>
                             <div className="hidden md:block">
@@ -434,7 +435,7 @@ const Wristband = () => {
                     </aside>
 
                     {/* Content Area */}
-                    <main id="main-scroll-container" className="flex-1 w-full md:h-full md:overflow-y-auto custom-scrollbar relative bg-white">
+                    <main id="main-scroll-container" className="flex-1 w-full relative bg-white">
                         {/* Extra bottom padding so content isn't hidden behind sticky bar */}
                         <div className="py-6 px-5 md:py-8 md:px-16 lg:px-24 pb-28">
                             <div className="max-w-[800px] mx-auto">
@@ -586,20 +587,16 @@ const Wristband = () => {
                         )}
                     </main>
                 </div>
+                <div className="pb-[120px] md:pb-[54px]">
+                  <Footer />
+                </div>
             </div>
 
             <style jsx global>{`
-        @media (min-width: 768px) {
-          html, body { overflow: hidden !important; }
-        }
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; border: 2px solid #f8fafc; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .sidebar-nav-scroll::-webkit-scrollbar { width: 4px; }
-        .sidebar-nav-scroll::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-nav-scroll::-webkit-scrollbar { width: 7px; }
+        .sidebar-nav-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
         .sidebar-nav-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
         .sidebar-nav-scroll::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
       `}</style>

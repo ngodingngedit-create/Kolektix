@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import Footer from '../../components/FooterComponent';
 
 const PrivacyPolicyPage: React.FC = () => {
   const [activeItem, setActiveItem] = useState<string>('introduction');
@@ -286,7 +287,7 @@ const PrivacyPolicyPage: React.FC = () => {
         <meta name='viewport' content='width=device-width, initial-scale=1.0' />
         <title>Syarat & Ketentuan | Kolektix</title>
       </Head>
-      <div className="bg-[#02255A] font-sans w-full md:h-screen md:pt-[72px] pt-[72px] flex flex-col md:overflow-hidden">
+      <div className="bg-[#02255A] font-sans w-full pt-[72px] flex flex-col">
 
         {/* Banner Hero Panjang Full Width (Kini menjadi bagian statis di atas) */}
         <div className="bg-gradient-to-r from-[#02255A] via-[#0B387C] to-[#184a96] py-6 px-5 md:py-8 md:px-8 relative overflow-hidden shrink-0 shadow-md z-10">
@@ -308,10 +309,10 @@ const PrivacyPolicyPage: React.FC = () => {
         </div>
 
         {/* Konten Utama Edge-to-Edge */}
-        <div className="flex-1 w-full bg-white flex flex-col md:flex-row md:overflow-hidden border-t-4 border-[#02255A]">
+        <div className="flex-1 w-full bg-white flex flex-col md:flex-row border-t-4 border-[#02255A]">
 
           {/* Navigasi Sidebar - STICKY di mobile agar tetap kelihatan saat konten di-scroll, fixed panel di desktop */}
-          <aside className="w-full md:w-1/3 lg:w-[28%] bg-white md:bg-slate-50 sticky top-[65px] md:static md:border-r border-b border-slate-200 md:border-b-0 flex-none md:flex-shrink-0 h-auto md:h-full no-scrollbar z-20 shadow-[0_-8px_0_8px_white,0_2px_6px_rgba(0,0,0,0.06)] md:shadow-none">
+          <aside className="w-full md:w-1/3 lg:w-[28%] bg-white md:bg-slate-50 sticky top-[65px] md:top-[72px] md:self-start border-b border-slate-200 md:border-b-0 flex-none md:flex-shrink-0 h-auto no-scrollbar z-20 shadow-[0_-8px_0_8px_white,0_2px_6px_rgba(0,0,0,0.06)] md:shadow-none">
             <div className="py-4 px-5 md:pt-7 md:pb-8 md:px-12">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 md:mb-6">Daftar Isi Kebijakan</h3>
 
@@ -357,7 +358,7 @@ const PrivacyPolicyPage: React.FC = () => {
           </aside>
 
           {/* Area Konten */}
-          <main id="main-scroll-container" className="flex-1 w-full md:h-full md:overflow-y-auto custom-scrollbar relative bg-white">
+          <main id="main-scroll-container" className="flex-1 w-full relative bg-white">
             <div className="py-6 px-5 md:py-8 md:px-16 lg:px-24">
               <div className="max-w-[800px] mx-auto">
                 {sections.map((item, index) => (
@@ -372,44 +373,13 @@ const PrivacyPolicyPage: React.FC = () => {
                   </div>
                 ))}
               </div>
-
-              {/* Action Buttons di Dasar Konten */}
-              {/* <div className="mt-16 pt-8 border-t border-slate-100 flex flex-col sm:flex-row gap-4 justify-end items-center">
-                <button className="w-full sm:w-auto px-8 py-3.5 bg-white border-2 border-slate-200 text-slate-500 font-bold rounded-xl hover:border-slate-300 hover:bg-slate-50 hover:text-slate-600 transition-all text-[15px]">
-                  Tolak Kebijakan
-                </button>
-                <button className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-[#02255A] to-[#0B387C] text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 hover:shadow-blue-900/30 hover:-translate-y-0.5 transition-all duration-200 text-[15px]">
-                  Saya Mengerti & Setuju
-                </button>
-              </div> */}
             </div>
           </main>
         </div>
+        <Footer />
       </div>
 
       <style jsx global>{`
-        /* Desktop only: lock body scroll, use internal panel scroll */
-        @media (min-width: 768px) {
-          html, body {
-            overflow: hidden !important;
-          }
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f8fafc;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background-color: #cbd5e1;
-          border-radius: 10px;
-          border: 2px solid #f8fafc;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background-color: #94a3b8;
-        }
-
         .no-scrollbar::-webkit-scrollbar {
           display: none;
         }
@@ -419,10 +389,11 @@ const PrivacyPolicyPage: React.FC = () => {
         }
 
         .sidebar-nav-scroll::-webkit-scrollbar {
-          width: 4px;
+          width: 7px;
         }
         .sidebar-nav-scroll::-webkit-scrollbar-track {
-          background: transparent;
+          background: #f1f5f9;
+          border-radius: 10px;
         }
         .sidebar-nav-scroll::-webkit-scrollbar-thumb {
           background-color: #cbd5e1;
@@ -437,3 +408,4 @@ const PrivacyPolicyPage: React.FC = () => {
 };
 
 export default PrivacyPolicyPage;
+
