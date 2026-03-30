@@ -221,8 +221,8 @@ const VenueDetail = () => {
             name: dummyName,
             location: isPadel ? "Jl. KH. Ahmad Dahlan, Purwokerto" : "Jalan Pahlawan No. 45, Senayan, Jakarta",
             location_detail: "Lokasi persis di belakang area utama, area parkir sangat memadai.",
-            description: isPadel 
-                ? "BEST PADEL COURT IN PURWOKERTO #1. Fasilitas premium dengan standar internasional. Dilengkapi dengan area tunggu yang nyaman, loker, dan kamar bilas yang bersih. Cocok untuk bermain bersama teman atau pertandingan kompetitif. Kami menyediakan penyewaan raket dan bola padel berkualitas tinggi. Ayo segera booking jadwalmu dan rasakan pengalaman bermain padel terbaik!" 
+            description: isPadel
+                ? "BEST PADEL COURT IN PURWOKERTO #1. Fasilitas premium dengan standar internasional. Dilengkapi dengan area tunggu yang nyaman, loker, dan kamar bilas yang bersih. Cocok untuk bermain bersama teman atau pertandingan kompetitif. Kami menyediakan penyewaan raket dan bola padel berkualitas tinggi. Ayo segera booking jadwalmu dan rasakan pengalaman bermain padel terbaik!"
                 : "Gelora Bung Karno Main Stadium adalah venue olahraga ikonik bertaraf internasional yang menawarkan fasilitas premium untuk semua kebutuhan acara Anda. \n\nDilengkapi dengan rumput standar FIFA, sistem pencahayaan modern 3500 lux, dan tribun penonton megah berkapasitas puluhan ribu jiwa, venue ini sangat ideal untuk pertandingan olahraga maupun event berskala besar. Setiap area dirancang dengan cermat untuk memberikan kenyamanan maksimal bagi para atlet dan kepuasan visual bagi penonton.\n\nSelain itu, venue ini terintegrasi dengan akses transportasi umum yang sangat mudah, halte TransJakarta dan stasiun MRT berada tepat di seberang kawasan. Fasilitas pendukung seperti ruang ganti VVIP, ruang konferensi pers, dan area komersial menjadikan stadion ini pilihan utama penyelenggara acara profesional.",
             starting_price: isPadel ? 30000 : 150000,
             max_capacity: 50,
@@ -233,10 +233,10 @@ const VenueDetail = () => {
                 { image_url: "https://images.unsplash.com/photo-1577223625816-7546f13df25d?q=80&w=1200" }
             ],
             facility: [
-                "Opsi pembayaran DP (Down Payment)", 
-                "Reschedule jadwal booking", 
-                "Lebih banyak promo & voucher", 
-                "Kamar Mandi / Shower", 
+                "Opsi pembayaran DP (Down Payment)",
+                "Reschedule jadwal booking",
+                "Lebih banyak promo & voucher",
+                "Kamar Mandi / Shower",
                 "Parkir Luas",
                 "Kantin / Area Makan",
                 "Sewa Alat Olahraga",
@@ -385,7 +385,7 @@ const VenueDetail = () => {
                                         </div>
                                     </div>
 
-                                     {/* Creator Section */}
+                                    {/* Creator Section */}
                                     <div className="px-6 py-5 flex flex-col gap-3 shrink-0" style={{ color: '#0f172a' }}>
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: '#64748b' }}>Penyelenggara</span>
                                         <div className="flex items-center gap-3 bg-white p-1 rounded-2xl">
@@ -599,7 +599,7 @@ const VenueDetail = () => {
                                     </div>
                                     <button className="text-[13px] font-black text-[#194e9e] hover:underline">Lihat Semua</button>
                                 </div>
-                                
+
                                 {/* Static rating summary */}
                                 <div className="flex flex-col md:flex-row gap-8 mb-10 pb-8 border-b border-slate-50">
                                     <div className="flex flex-col items-center justify-center bg-slate-50/50 rounded-[28px] p-8 border border-slate-100 min-w-[200px]">
@@ -646,7 +646,9 @@ const VenueDetail = () => {
                                                     <Icon key={s} icon={s <= rv.stars ? 'solar:star-bold' : 'solar:star-linear'} className={`text-[13px] ${s <= rv.stars ? 'text-yellow-400' : 'text-gray-200'}`} />
                                                 ))}
                                             </div>
-                                            <p className="text-[13px] text-gray-600 font-medium leading-relaxed line-clamp-3 italic opacity-80">"{rv.review}"</p>
+                                            <p className="text-[13px] text-gray-600 font-medium leading-relaxed line-clamp-3 italic opacity-80">
+                                                {`"${rv.review}"`}
+                                            </p>
                                         </div>
                                     ))}
                                 </div>
@@ -670,13 +672,13 @@ const VenueDetail = () => {
                                 <div className="h-0.5 w-12 bg-[#194e9e]/40 rounded-full mt-1"></div>
                             </div>
                         </div>
-                        
+
                         <div className="bg-white rounded-[32px] p-2 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-[#d1d1d1] flex flex-col md:flex-row gap-3">
                             <div className="flex-[2] min-h-[350px] md:min-h-[450px] rounded-[24px] overflow-hidden relative">
                                 <iframe
                                     src={
                                         data?.location?.startsWith('http') ? data?.location :
-                                        'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.239516341929!2d106.82918257586827!3d-6.232123761033168!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f3e8cbb9e497%3A0xc9b90fc0ac3963bc!2sMenara%20Kadin%20Indonesia%2C%20Jl.%20H.%20R.%20Rasuna%20Said%20Blok%20X-5%20No.Kav.%202-3%2C%20RT.1%2FRW.2%2C%20Kuningan%2C%20Kuningan%20Tim.%2C%20Kecamatan%20Setiabudi%2C%20Kota%20Jakarta%20Selatan%2C%20Daerah%20Khusus%20Ibukota%20Jakarta%2012950!5e0!3m2!1sid!2sid!4v1721144578839!5m2!1sid!2sid'
+                                            'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.239516341929!2d106.82918257586827!3d-6.232123761033168!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f3e8cbb9e497%3A0xc9b90fc0ac3963bc!2sMenara%20Kadin%20Indonesia%2C%20Jl.%20H.%20R.%20Rasuna%20Said%20Blok%20X-5%20No.Kav.%202-3%2C%20RT.1%2FRW.2%2C%20Kuningan%2C%20Kuningan%20Tim.%2C%20Kecamatan%20Setiabudi%2C%20Kota%20Jakarta%20Selatan%2C%20Daerah%20Khusus%20Ibukota%20Jakarta%2012950!5e0!3m2!1sid!2sid!4v1721144578839!5m2!1sid!2sid'
                                     }
                                     width="100%"
                                     height="100%"
@@ -686,7 +688,7 @@ const VenueDetail = () => {
                                     referrerPolicy="no-referrer-when-downgrade"
                                 ></iframe>
                             </div>
-                            
+
                             <div className="flex-1 p-5 lg:p-6 flex flex-col gap-6">
                                 <div>
                                     <h6 className="text-[14px] font-black text-gray-900 mb-2 uppercase tracking-widest text-[#194e9e]">Alamat Lengkap</h6>
@@ -695,9 +697,9 @@ const VenueDetail = () => {
                                     </p>
                                     {!!data?.location_detail && <p className="text-[13px] text-gray-500 mt-2 font-medium">{data?.location_detail}</p>}
                                 </div>
-                                
+
                                 <div className="h-px bg-gray-100 w-full" />
-                                
+
                                 <div className="flex-1">
                                     <h6 className="text-[14px] font-black text-gray-900 mb-5 tracking-wide">Transportasi UMKM Terdekat</h6>
                                     <div className="flex flex-col gap-3">
@@ -759,9 +761,9 @@ const VenueDetail = () => {
                     </div>
                 </div>
             </div>{/* end min-h-screen */}
-            
+
             {/* Full screen overlay and Detail Modals remain untouched */}
-            
+
             {/* Booking Modal */}
             <Modal opened={modalBooking} onClose={() => setModalBooking(false)} title="Pilih Tanggal Booking" centered radius="lg">
                 <Stack gap={15}>
