@@ -559,11 +559,13 @@ const PilihJadwal = () => {
                                                 {/* Left Image */}
                                                 <div className="w-full sm:w-[320px] h-[180px] sm:h-auto shrink-0 relative bg-gray-100 border-b sm:border-b-0 sm:border-r border-[#d1d1d1]">
                                                     <ImageM 
-                                                        src={data?.gallery && data.gallery.length >= courtNum ? data.gallery[courtNum - 1].image_url : (data?.image_url || 'https://images.unsplash.com/photo-1546519638-68e109498ffc')} 
+                                                        src={data?.venue_gallery && data.venue_gallery.length >= courtNum 
+                                                            ? data.venue_gallery[courtNum - 1].image_url 
+                                                            : (data?.venue_gallery?.[0]?.image_url || 'https://images.unsplash.com/photo-1546519638-68e109498ffc')} 
                                                         w="100%" h="100%" fit="cover" 
                                                     />
                                                     {/* Optional dark gradient to make it look premium */}
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-40"></div>
                                                 </div>
 
                                                 {/* Right Content */}
