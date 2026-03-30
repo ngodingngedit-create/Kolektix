@@ -20,8 +20,9 @@ interface VenueCardProps {
   price: number;
   slug: string;
   bookmark_id?: number;
+  category?: string;
 }
-const VenueCard = ({ id, bookmark_id, slug, title, image, location, price }: VenueCardProps) => {
+const VenueCard = ({ id, bookmark_id, slug, title, image, location, price, category }: VenueCardProps) => {
   const [bookmark, setBookmark] = useState<boolean>(false);
   const [loading, setLoading] = useListState<string>();
   const users = useLoggedUser();
@@ -41,7 +42,7 @@ const VenueCard = ({ id, bookmark_id, slug, title, image, location, price }: Ven
           modals.openConfirmModal({
             centered: true,
             title: 'Hapus dari bookmark',
-            children: 'Apakah kamu yakin ingin menghapus event ini dari bookmark?',
+            children: 'Apakah kamu yakin ingin menghapus venue ini dari bookmark?',
             labels: { cancel: 'Batal', confirm: 'Hapus' },
             onConfirm: () => {
               toggleBookmarkFetch(false);
@@ -66,7 +67,7 @@ const VenueCard = ({ id, bookmark_id, slug, title, image, location, price }: Ven
             success: () => {
               const data = JSON.parse(Cookies.get('bookmarked') ?? '[]') as BookmarkListResponse[];
               Cookies.set('bookmarked', JSON.stringify(data.filter(e => e.venue_id != id)));
-              toast.info('Berhasil menghapus ke bookmark');
+              toast.info('Berhasil menghapus dari bookmark');
             },
             complete: () => setLoading.filter(e => e != 'bookmark'),
             error: () => toast.error('Gagal Menghapus')
@@ -92,55 +93,110 @@ const VenueCard = ({ id, bookmark_id, slug, title, image, location, price }: Ven
         });
       }
 
+  // Get short city name for the image overlay
+  const shortCity = location.split(',')[1]?.trim() || location.split(',')[0];
+
+  // Dynamic facility text based on category
+  let fasilitasText = 'Multifungsi & Serbaguna';
+  if (category === 'Olahraga') {
+    const t = title.toLowerCase();
+    if (t.includes('padel')) fasilitasText = 'Papan Padel & Fasilitas';
+    else if (t.includes('futsal')) fasilitasText = 'Lapangan Futsal Terbaik';
+    else if (t.includes('stadium') || t.includes('gelora')) fasilitasText = 'Stadion Sepak Bola & Atletik';
+    else fasilitasText = 'Padel, Futsal, Badminton, dll.';
+  } else if (category === 'Convention Hall' || category === 'Hall') {
+    fasilitasText = 'Wedding, Concert & Event Serbaguna';
+  } else if (category === 'Auditorium') {
+    fasilitasText = 'Seminar, Teater & Conference';
+  } else if (category === 'Meeting Room') {
+    fasilitasText = 'Meeting, Workshop & Gathering';
+  }
+
+  // Dynamic icon based on category
+  let iconFasilitas = "solar:cup-star-bold-duotone";
+  if (category === 'Olahraga') iconFasilitas = "solar:volleyball-bold-duotone";
+  else if (category === 'Meeting Room' || category === 'Auditorium') iconFasilitas = "solar:projector-bold-duotone";
+  else if (category === 'Convention Hall' || category === 'Hall') iconFasilitas = "solar:buildings-bold-duotone";
+
   return (
-    <Card withBorder radius={10} p={0} className={`hover:!bg-grey/10 transition-colors [&_.bookmarkicon]:hover:!opacity-100 [&_.mantine-Carousel-control]:hover:!opacity-100 [&_.mantine-Carousel-control]:!opacity-0`}>
+    <div className="group relative flex flex-col bg-white rounded-[32px] overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] hover:-translate-y-1.5 transition-all duration-500 h-full">
+      {/* Invisible link overlay for the whole card */}
+      <Link href={`/venue/${slug}`} className="absolute inset-0 z-10" />
 
-      <Card pos="absolute" top={15} right={15} radius={0} className={`!z-20`} p={0} bg="none">
-        <ActionIcon onClick={toggleBookmark} loading={loading.includes('setbookmark')} variant="transparent" color="white" size="lg" className={`opacity-0 bookmarkicon`}>
-          <Icon icon={bookmark ? "famicons:bookmark" : "famicons:bookmark-outline"} className={`text-[30px]`} />
-        </ActionIcon>
-      </Card>
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-50">
+        <Image
+          src={image?.[0] || notFoundImage.src}
+          alt={title}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+        />
 
-      <Stack gap={0}>
-        <AspectRatio w="100%">
-          {image && (
-            <Carousel controlSize={12}>
-              {image.map((e, i) => (
-                <Carousel.Slide key={i}>
-                  <AspectRatio w="100%">
-                    <Image
-                      src={e}
-                      alt={title}
-                    />
-                  </AspectRatio>
-                </Carousel.Slide>
-              ))}
-              {image.length == 0 && (
-                <Carousel.Slide>
-                  <AspectRatio w="100%">
-                    <Image
-                      src={notFoundImage.src}
-                      alt={title}
-                    />
-                  </AspectRatio>
-                </Carousel.Slide>
-              )}
-            </Carousel>
-          )}
-        </AspectRatio>
+        {/* Top-left category tag (Premium Light) */}
+        {category && (
+          <div className="absolute top-4 left-4 z-20 px-3 py-1.5 bg-white/95 backdrop-blur-sm text-primary-base text-[10px] font-extrabold uppercase tracking-widest rounded-full shadow-md">
+            {category}
+          </div>
+        )}
 
-        <Box component={Link} href={`/venue/${slug}`}>
-          <Stack gap={0} p={15} >
-            <p className='text-xs text-grey'>{location}</p>
-            <p className='font-semibold'>{title}</p>
-            <p className='mt-[10px] text-primary-dark text-xs'>Mulai dari</p>
-            <p className='font-semibold'>
-                <NumberFormatter value={price} /> <span className='text-grey'>/Hari</span>
+        {/* Bottom-left Location tag inside Image */}
+        <div className="absolute bottom-4 left-4 z-20 px-3 py-1.5 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold rounded-full flex items-center gap-1.5 shadow-xl">
+            <Icon icon="solar:map-point-bold" className="text-white text-[14px]" />
+            <span className="mb-[1px]">{shortCity}</span>
+        </div>
+
+        {/* Bookmark Button (z-20 so it's clickable above the link overlay) */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleBookmark();
+          }}
+          disabled={loading.includes('setbookmark')}
+          className="absolute top-4 right-4 z-30 w-[38px] h-[38px] flex items-center justify-center rounded-full bg-white/95 backdrop-blur-sm shadow-xl text-gray-400 hover:text-red-500 hover:scale-110 transition-all disabled:opacity-50"
+        >
+          <Icon icon={bookmark ? "famicons:bookmark" : "famicons:bookmark-outline"} className="text-[20px] transition-colors" />
+        </button>
+      </div>
+
+      <div className="flex flex-col p-6 flex-1 relative z-20 pointer-events-none">
+        {/* Rating & Title */}
+        <div className="mb-4">
+          <div className="flex items-center gap-1.5 mb-2.5">
+            <Icon icon="solar:star-fall-bold" className="text-yellow-400 text-[14px] drop-shadow-sm" />
+            <span className="text-[12px] font-bold text-gray-800 tracking-wide">4.8</span>
+            <span className="text-[11px] font-medium text-gray-400 tracking-tight">(120 ulasan)</span>
+          </div>
+          <h3 className="font-black text-gray-900 text-[19px] leading-tight group-hover:text-primary-base transition-colors line-clamp-2 tracking-tight">
+            {title}
+          </h3>
+        </div>
+
+        {/* Details Row */}
+        <div className="flex flex-col gap-2.5 mb-6">
+            <div className="flex items-center gap-3 text-[13px] font-bold text-gray-500">
+                <Icon icon={iconFasilitas} className="text-primary-base/60 text-[20px] shrink-0" />
+                <span className="line-clamp-1">{fasilitasText}</span>
+            </div>
+            <div className="flex items-start gap-3 text-[13px] font-bold text-gray-500">
+                <Icon icon="solar:map-point-bold-duotone" className="text-primary-base/60 text-[20px] shrink-0 mt-0.5" />
+                <span className="line-clamp-1 leading-snug">{location}</span>
+            </div>
+        </div>
+
+        {/* Footer Pricing & Button (BORDERLESS DIVIDER) */}
+        <div className="mt-auto bg-slate-50/50 -mx-6 -mb-6 px-6 py-5 flex items-center justify-between gap-2">
+          <div className="flex flex-col min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5 opacity-80">Mulai dari</p>
+            <p className="font-extrabold text-[18px] md:text-[20px] text-gray-900 leading-none truncate">
+              <NumberFormatter value={price} prefix="Rp " thousandSeparator="." decimalSeparator="," />
             </p>
-          </Stack>
-        </Box>
-      </Stack>
-    </Card>
+          </div>
+
+          <button className="bg-primary-base text-white px-5 py-3 rounded-xl text-[12px] font-black shadow-lg shadow-primary-base/20 hover:scale-105 active:scale-95 transition-all whitespace-nowrap shrink-0 flex items-center gap-2">
+             Booking <Icon icon="solar:arrow-right-line-duotone" className="text-[16px]" />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 

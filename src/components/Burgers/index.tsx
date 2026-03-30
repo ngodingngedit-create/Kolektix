@@ -15,7 +15,7 @@ const Burgers = ({
   return (
     <div>
       <button onClick={toggleBurger} className={styles.button}>
-        <span className={`${styles.burger6} ${isOpen && styles.isClosed}`}>
+        <span className={`${styles.burger6} ${isOpen ? styles.isClosed : ''}`}>
           <span></span>
           <span></span>
           <span></span>

@@ -1,7 +1,13 @@
 import type { Config } from "tailwindcss";
 import { nextui } from "@nextui-org/react";
+
 const config: Config = {
-  content: ["./src/pages/**/*.{js,ts,jsx,tsx,mdx}", "./src/components/**/*.{js,ts,jsx,tsx,mdx}", "./src/app/**/*.{js,ts,jsx,tsx,mdx}", "./node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}"],
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}"
+  ],
   theme: {
     extend: {
       fontFamily: {
@@ -13,6 +19,9 @@ const config: Config = {
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic": "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+      },
+      borderColor: {
+        'custom-gray': 'rgba(107, 114, 128, 0.5)',
       },
     },
     screens: {
@@ -30,8 +39,8 @@ const config: Config = {
       "primary-light-200": "#E2EEFE",
 
       // 🎨 tambahan baru:
-      "primary-light-700": "#1453b6", // untuk hover (sedikit lebih terang dari dark)
-      "primary-light-800": "#0d3e91", // untuk active (lebih gelap dari base, tapi belum sampai darker)
+      "primary-light-700": "#1453b6", 
+      "primary-light-800": "#0d3e91", 
 
       white: "#FFFFFF",
       dark: "#000000",
@@ -43,7 +52,6 @@ const config: Config = {
   plugins: [
     nextui({
       addCommonColors: true,
-
       themes: {
         dark: {
           colors: {
@@ -73,4 +81,5 @@ const config: Config = {
     }),
   ],
 };
+
 export default config;

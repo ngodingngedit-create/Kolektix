@@ -22,16 +22,29 @@ const facility = [
   'Back Stage',
 ];
 
+import Link from 'next/link';
+import { Icon } from '@iconify/react/dist/iconify.js';
+
 const VenueDetail = () => {
   return (
-    <div  className='max-w-5xl min-h-screen mx-auto py-20 px-4 sm:px-8 md:px-12 lg:px-0'>
-      <div className=''>
-        <Breadcrumbs>
-          <BreadcrumbItem>Beranda</BreadcrumbItem>
-          <BreadcrumbItem>List Venue</BreadcrumbItem>
-          <BreadcrumbItem>Detail</BreadcrumbItem>
-        </Breadcrumbs>
+    <>
+      {/* Breadcrumb / History Section Matching Reference Image */}
+      <div className="w-full bg-[#a0101d] overflow-hidden relative">
+        <div className="absolute inset-0 opacity-10" style={{ 
+            backgroundImage: `repeating-radial-gradient(circle at 100% 100%, transparent 0, #fff 1px, transparent 2px, transparent 100px), repeating-radial-gradient(circle at 0% 0%, transparent 0, #fff 1px, transparent 2px, transparent 60px)` 
+        }}></div>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-5 relative z-10 w-full">
+          <div className="flex items-center gap-3 text-white text-[18px] md:text-[22px] font-medium tracking-wide">
+            <Link href="/" className="hover:text-gray-200 transition-colors">Home</Link>
+            <Icon icon="solar:alt-arrow-right-linear" className="text-white/80 text-[20px] font-bold" />
+            <Link href="/venue" className="hover:text-gray-200 transition-colors">Sewa Lapangan</Link>
+            <Icon icon="solar:alt-arrow-right-linear" className="text-white/80 text-[20px] font-bold" />
+            <span className="text-white">Cahaya Bangsa Nusantara</span>
+          </div>
+        </div>
       </div>
+
+    <div className='max-w-5xl min-h-screen mx-auto py-10 px-4 sm:px-8 md:px-12 lg:px-0'>
       <div className='flex w-full py-5 h-[500px] gap-2'>
         <Image src={foto} alt='Banner' className='w-1/2 object-cover rounded-md' />
         <div className='grid grid-cols-2 gap-2'>
@@ -161,6 +174,7 @@ const VenueDetail = () => {
 </div>
 
     </div>
+    </>
   );
 };
 

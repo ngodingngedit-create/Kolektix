@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import foto from '../../assets/images/Banner-amis.png';
+import foto from '../../../assets/images/Banner-amis.png';
 import CreatorTitle from '@/components/Creator/CreatorTitle';
 import Button from '@/components/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -10,10 +10,10 @@ import { BreadcrumbItem, Breadcrumbs } from '@nextui-org/react';
 import InputField from '@/components/Input';
 import { useRouter } from 'next/router';
 import fetch from '@/utils/fetch';
-import { EventListResponse } from '../dashboard/my-event/type';
+import { EventListResponse } from '../../dashboard/my-event/type';
 import { useClickOutside, useListState, useSetState } from '@mantine/hooks';
 import { ActionIcon, AspectRatio, Box, Button as ButtonM, Card, Flex, Image as ImageM, Modal, NumberFormatter, Stack, Text, UnstyledButton, Tooltip } from '@mantine/core';
-import { VenueListResponse } from '../dashboard/venue/type';
+import { VenueListResponse } from '../../dashboard/venue/type';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { Carousel } from '@mantine/carousel';
 import Link from 'next/link';
@@ -21,7 +21,7 @@ import Chat from '@/components/chat';
 import { DateInput as DateInputM, DatePickerInput } from '@mantine/dates';
 import moment from 'moment';
 import Cookies from 'js-cookie';
-import { VenueBookingOrder } from '../venue-order';
+import { VenueBookingOrder } from '../../venue-order';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import AuthModal from '@/components/AuthModal';
 
@@ -63,7 +63,7 @@ const dateStrip = generateDateStrip();
 const daysIdShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 const monthsIdShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
 
-const VenueDetail = () => {
+const PilihJadwal = () => {
     const router = useRouter();
     const { slug } = router.query;
     const [galleryIndex, setGalleryIndex] = useState(0);
@@ -104,7 +104,16 @@ const VenueDetail = () => {
     const [selectedCourt, setSelectedCourt] = useState<number | null>(null);
     // selectedSlots persists across courts — key format: "{courtNum}-{HH:MM}"
     const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+    const [expandedCourts, setExpandedCourts] = useState<number[]>([1, 2, 3]);
     const carouselApi = React.useRef<any>(null);
+
+    const toggleCourt = (courtNum: number) => {
+        setExpandedCourts(prev => 
+            prev.includes(courtNum) 
+                ? prev.filter(c => c !== courtNum) 
+                : [...prev, courtNum]
+        );
+    };
 
     const toggleSlot = (slotKey: string) => {
         setSelectedSlots(prev =>
@@ -221,7 +230,9 @@ const VenueDetail = () => {
             name: dummyName,
             location: isPadel ? "Jl. KH. Ahmad Dahlan, Purwokerto" : "Jalan Pahlawan No. 45, Senayan, Jakarta",
             location_detail: "Lokasi persis di belakang area utama, area parkir sangat memadai.",
-            description: isPadel ? "BEST PADEL COURT IN PURWOKERTO #1. WE COME. WE PLAY. WE WIN.... NO TIME TO LOSE" : "Venue olahraga premium terbaik di kelasnya. Memiliki fasilitas yang sangat lengkap dengan standarisasi profesional.",
+            description: isPadel 
+                ? "BEST PADEL COURT IN PURWOKERTO #1. Fasilitas premium dengan standar internasional. Dilengkapi dengan area tunggu yang nyaman, loker, dan kamar bilas yang bersih. Cocok untuk bermain bersama teman atau pertandingan kompetitif. Kami menyediakan penyewaan raket dan bola padel berkualitas tinggi. Ayo segera booking jadwalmu dan rasakan pengalaman bermain padel terbaik!" 
+                : "Gelora Bung Karno Main Stadium adalah venue olahraga ikonik bertaraf internasional yang menawarkan fasilitas premium untuk semua kebutuhan acara Anda. \n\nDilengkapi dengan rumput standar FIFA, sistem pencahayaan modern 3500 lux, dan tribun penonton megah berkapasitas puluhan ribu jiwa, venue ini sangat ideal untuk pertandingan olahraga maupun event berskala besar. Setiap area dirancang dengan cermat untuk memberikan kenyamanan maksimal bagi para atlet dan kepuasan visual bagi penonton.\n\nSelain itu, venue ini terintegrasi dengan akses transportasi umum yang sangat mudah, halte TransJakarta dan stasiun MRT berada tepat di seberang kawasan. Fasilitas pendukung seperti ruang ganti VVIP, ruang konferensi pers, dan area komersial menjadikan stadion ini pilihan utama penyelenggara acara profesional.",
             starting_price: isPadel ? 30000 : 150000,
             max_capacity: 50,
             seat_capacity: 50,
@@ -348,39 +359,42 @@ const VenueDetail = () => {
                                     </div>
                                 </div>
                                 {/* Floating see all photos button */}
-                                <button
-                                    onClick={() => { setGalleryActiveIdx(0); setShowGallery(true); }}
-                                    className="absolute bottom-6 right-6 z-20 flex items-center gap-2 px-5 py-3 bg-white/90 backdrop-blur-md rounded-2xl text-gray-900 text-[12px] font-black shadow-2xl hover:bg-white hover:scale-105 transition-all outline outline-1 outline-gray-200"
-                                >
-                                    <Icon icon="solar:gallery-minimalistic-bold" className="text-[16px] text-[#194e9e]" />
-                                    Lihat semua {galleryImages.length} foto
-                                </button>
+                                <div className="absolute bottom-6 right-6 z-20">
+                                    <button
+                                        onClick={() => { setGalleryActiveIdx(0); setShowGallery(true); }}
+                                        className="flex flex-row items-center gap-2 px-5 py-3 bg-white hover:bg-gray-50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.2)] hover:scale-105 transition-all outline outline-1 outline-gray-200"
+                                        style={{ color: '#0f172a' }}
+                                    >
+                                        <Icon icon="solar:gallery-minimalistic-bold" style={{ color: '#194e9e', fontSize: '16px' }} />
+                                        <span style={{ fontSize: '12px', fontWeight: 900 }}>Lihat semua {galleryImages.length} foto</span>
+                                    </button>
+                                </div>
                             </div>
 
                             {/* RIGHT – Harga Mulai Dari + Kreator + Chat Host */}
                             <div className="flex-1 shrink-0 flex flex-col gap-4">
-                                <div className="bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col border border-gray-100 h-full">
+                                <div className="bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col border border-[#d1d1d1] h-full text-slate-900">
                                     {/* HARGA WIDGET */}
-                                    <div className="bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] px-6 py-8 border-b border-gray-100 flex-1">
-                                        <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">HARGA MULAI DARI</p>
+                                    <div className="bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] px-6 py-8 border-b border-[#d1d1d1] flex-1">
+                                        <p className="!text-[#64748b] text-[10px] font-black uppercase tracking-[0.2em] mb-2">HARGA MULAI DARI</p>
                                         <div className="flex items-baseline gap-1.5">
-                                            <span className="text-gray-900 text-[36px] font-black leading-none tracking-tighter">
+                                            <span className="!text-[#0f172a] text-[36px] font-black leading-none tracking-tighter">
                                                 Rp{(data?.starting_price ?? 95000).toLocaleString('id')}
                                             </span>
-                                            <span className="text-gray-500 text-[14px] font-bold">/ sesi</span>
+                                            <span className="!text-[#64748b] text-[14px] font-bold">/ sesi</span>
                                         </div>
                                     </div>
 
-                                    {/* Creator Section */}
-                                    <div className="px-6 py-5 flex flex-col gap-3 shrink-0">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Penyelenggara</span>
+                                     {/* Creator Section */}
+                                    <div className="px-6 py-5 flex flex-col gap-3 shrink-0" style={{ color: '#0f172a' }}>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: '#64748b' }}>Penyelenggara</span>
                                         <div className="flex items-center gap-3 bg-white p-1 rounded-2xl">
                                             <div className="w-11 h-11 rounded-xl overflow-hidden shadow-sm">
                                                 <ImageM src={data?.creator?.image_url} w="100%" h="100%" fit="cover" />
                                             </div>
                                             <div className="flex flex-col min-w-0">
-                                                <span className="text-[14px] font-black tracking-tight text-gray-900 truncate">{data?.creator?.name}</span>
-                                                <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                                                <span className="text-[14px] font-black tracking-tight truncate" style={{ color: '#0f172a' }}>{data?.creator?.name}</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5" style={{ color: '#16a34a' }}>
                                                     <Icon icon="solar:verified-check-bold" /> Official
                                                 </span>
                                             </div>
@@ -406,18 +420,21 @@ const VenueDetail = () => {
                             </div>
                         </div>
 
-                        {/* Navigation Tabs (below image/card) */}
                         <div className="mt-10 border-b border-white/10">
                             <div className="flex items-center gap-8">
                                 {[
                                     { id: 'info', label: 'Deskripsi' },
-                                    { id: 'lapangan', label: 'Pilih Jadwal' },
                                     { id: 'ulasan', label: 'Ulasan' },
-                                    { id: 'syarat', label: 'Syarat & Ketentuan' },
+                                    { id: 'lokasi', label: 'Lokasi' },
+                                    { id: 'lapangan', label: 'Pilih Jadwal' },
                                 ].map((tab) => (
                                     <button
                                         key={tab.id}
                                         onClick={() => {
+                                            if (tab.id !== 'lapangan') {
+                                                router.push(`/venue/${slug}`);
+                                                return;
+                                            }
                                             const ref = sectionRefs[tab.id as keyof typeof sectionRefs];
                                             ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start', offset: -100 } as any);
                                         }}
@@ -445,13 +462,17 @@ const VenueDetail = () => {
                         <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
                             {[
                                 { id: 'info', label: 'Deskripsi' },
-                                { id: 'lapangan', label: 'Pilih Jadwal' },
                                 { id: 'ulasan', label: 'Ulasan' },
-                                { id: 'syarat', label: 'Syarat & Ketentuan' },
+                                { id: 'lokasi', label: 'Lokasi' },
+                                { id: 'lapangan', label: 'Pilih Jadwal' },
                             ].map((sec) => (
                                 <button
                                     key={sec.id}
                                     onClick={() => {
+                                        if (sec.id !== 'lapangan') {
+                                            router.push(`/venue/${slug}`);
+                                            return;
+                                        }
                                         const ref = sectionRefs[sec.id as keyof typeof sectionRefs];
                                         ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                     }}
@@ -467,197 +488,277 @@ const VenueDetail = () => {
                     </div>
                 </div>
 
-                {/* ── MAIN CONTENT – Full Width ── */}
-                <div className="max-w-6xl mx-auto px-4 md:px-0 py-6">
-                    <div className="flex flex-col text-dark gap-6">
-                        {/* ── FULL WIDTH CONTENT ── */}
-                        <div ref={sectionRefs.info} className="w-full flex flex-col gap-0">
-
-                            {/* PROPERTY TITLE CARD */}
-                            {/* PROPERTY TITLE CARD - REDESIGNED */}
-                            <div className="bg-white rounded-[32px] p-6 md:p-10 mb-6 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] relative overflow-hidden">
-                                <h1 className="font-exrabold text-3xl md:text-4xl text-gray-900 capitalize leading-tight mb-4 tracking-tight">{data?.name}</h1>
-
-                                {/* Rating & Location Row */}
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-8 border-b border-slate-100">
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex items-center gap-0.5">
-                                                {[1, 2, 3, 4, 5].map(s => <Icon key={s} icon="solar:star-bold" className="text-yellow-400 text-[18px]" />)}
-                                            </div>
-                                            <span className="text-[15px] font-black text-gray-800">4.94</span>
-                                            <span className="text-[14px] text-gray-400 font-medium">(120+ ulasan)</span>
-                                        </div>
-                                        {/* <div className="flex items-center gap-2">
-                                            <Icon icon="solar:map-point-bold-duotone" className="text-primary-base text-lg" />
-                                            <span className="text-[14px] text-gray-600 font-semibold line-clamp-1">{data?.location}</span>
-                                        </div> */}
-                                    </div>
-                                </div>
-
-                                {/* Description */}
-                                <div className="mb-8">
-                                    <h6 className="text-[14px] font-black text-[#194e9e] uppercase tracking-[0.2em] mb-4">Deskripsi Venue</h6>
-                                    <p className="leading-relaxed text-gray-600 font-medium text-[15px]">
-                                        {data?.description}
-                                    </p>
-                                </div>
-
-                                {/* Aturan */}
-                                <div className="mb-8">
-                                    <h6 className="text-[14px] font-black text-[#194e9e] uppercase tracking-[0.2em] mb-4">Aturan Venue</h6>
-                                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {[
-                                            { text: 'Dilarang membawa makanan dari luar', icon: 'solar:forbidden-circle-bold' },
-                                            { text: 'Menggunakan sepatu olahraga yang sesuai', icon: 'solar:running-bold' },
-                                            { text: 'Check-in 15 menit sebelum waktu mulai', icon: 'solar:clock-circle-bold' },
-                                            { text: 'Menjaga kebersihan area lapangan', icon: 'solar:trash-bin-minimalistic-bold' },
-                                        ].map((rule, idx) => (
-                                            <li key={idx} className="flex items-start gap-2.5 text-[14px] text-gray-600 font-semibold">
-                                                <Icon icon={rule.icon} className="text-primary-base/40 text-lg shrink-0 mt-0.5" />
-                                                {rule.text}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-
-                                {/* Facilities */}
+                {/* ── MAIN CONTENT – Responsive 2-Column ── */}
+                <div className="max-w-7xl w-full mx-auto px-4 lg:px-6 py-6 pb-24 lg:pb-36">
+                    <div ref={sectionRefs.lapangan} className="flex flex-col lg:flex-row items-start gap-6 lg:gap-8">
+                        {/* LEFT COLUMN: Main Scheduling UI */}
+                        <div className="flex-1 w-full bg-white rounded-[32px] p-6 lg:p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-[#d1d1d1] relative overflow-hidden">
+                            <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                                 <div>
-                                    <h6 className="text-[14px] font-black text-[#194e9e] uppercase tracking-[0.2em] mb-4">Fasilitas Venue</h6>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                        {(data?.facility?.slice(0, 4) || []).map((el, idx) => {
-                                            const facilityIcons: Record<string, string> = {
-                                                'DP': 'solar:card-bold',
-                                                'Down Payment': 'solar:card-bold',
-                                                'Reschedule': 'solar:calendar-date-bold',
-                                                'promo': 'solar:tag-bold',
-                                                'voucher': 'solar:tag-bold',
-                                                'Kamar Mandi': 'solar:bath-bold',
-                                                'Shower': 'solar:bath-bold',
-                                                'Parkir': 'solar:parking-bold',
-                                                'Wifi': 'solar:wifi-bold',
-                                                'AC': 'solar:wind-bold',
-                                                'Toilet': 'solar:bath-bold',
-                                            };
-                                            const icon = Object.keys(facilityIcons).find(k => el.toLowerCase().includes(k.toLowerCase()));
-                                            return (
-                                                <div key={idx} className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50/50 hover:bg-white hover:shadow-lg transition-all group">
-                                                    <div className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:bg-primary-base transition-colors shrink-0">
-                                                        <Icon icon={icon ? facilityIcons[icon] : 'solar:check-circle-bold'} className="text-[16px] text-primary-base group-hover:text-white transition-colors" />
-                                                    </div>
-                                                    <span className="text-[12px] font-bold text-gray-700 leading-tight">{el}</span>
-                                                </div>
-                                            );
-                                        })}
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <h2 className="text-2xl font-black text-gray-900 tracking-tight">Pilih Jadwal & Lapangan</h2>
+                                        <div className="px-3 py-1 bg-blue-50 rounded-lg border border-blue-100">
+                                            <span className="text-[12px] font-black text-[#194e9e] uppercase tracking-wider">
+                                                {monthsIdShort[selectedDate.getMonth()]} {selectedDate.getFullYear()}
+                                            </span>
+                                        </div>
                                     </div>
-                                    {/* Baca selengkapnya button */}
+                                    <p className="text-sm font-medium text-gray-500">Pilih tanggal dan slot waktu yang tersedia untuk booking.</p>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <button className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-all">
+                                            <Icon icon="solar:calendar-bold" className="text-xl" />
+                                        </button>
+                                        <button className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-all">
+                                            <Icon icon="solar:filter-bold" className="text-xl" />
+                                        </button>
+                                    </div>
+                                    <div className="hidden sm:flex items-center gap-2">
+                                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-white border-2 border-primary-base"></div><span className="text-[11px] font-bold text-gray-500">Tersedia</span></div>
+                                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-gray-200"></div><span className="text-[11px] font-bold text-gray-500">Penuh</span></div>
+                                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-primary-base"></div><span className="text-[11px] font-bold text-gray-500">Pilihanmu</span></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Date Strip */}
+                            <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+                                {dateStrip.map((d, i) => (
                                     <button
-                                        onClick={() => setShowDetailModal(true)}
-                                        className="mt-4 flex items-center gap-2 text-primary-base text-[13px] font-black hover:underline"
+                                        key={i}
+                                        onClick={() => setSelectedDate(d)}
+                                        className={`flex flex-col items-center justify-center min-w-[70px] h-[80px] rounded-[18px] border-2 transition-all ${
+                                            selectedDate.getDate() === d.getDate()
+                                                ? 'border-[#194e9e] bg-[#194e9e] text-white shadow-[0_8px_20px_-6px_rgba(25,78,158,0.4)]'
+                                                : 'border-gray-100 bg-white text-gray-600 hover:border-blue-200 hover:bg-blue-50/50'
+                                        }`}
                                     >
-                                        <Icon icon="solar:document-text-bold" className="text-[15px]" />
-                                        Baca selengkapnya
-                                        <Icon icon="solar:alt-arrow-right-linear" className="text-[13px]" />
+                                        <span className={`text-[11px] font-bold uppercase tracking-wider mb-1 ${selectedDate.getDate() === d.getDate() ? 'text-blue-100' : 'text-gray-400'}`}>
+                                            {daysIdShort[d.getDay()]}
+                                        </span>
+                                        <span className="text-[20px] font-black leading-none">{d.getDate()}</span>
                                     </button>
-                                </div>
+                                ))}
                             </div>
 
-                            <div className="h-px bg-black/5 -mx-6 my-2"></div>
+                            <div className="h-px w-full bg-gray-100 my-6"></div>
 
-                            {/* Pilih Lapangan section dipindah ke page berbeda */}
-
-                            <div ref={sectionRefs.ulasan} className="mt-6">
-                                {/* Section header */}
-                                <div className="flex items-center justify-between mb-5">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-yellow-50/50">
-                                            <Icon icon="solar:star-bold" className="text-yellow-500 text-[18px]" />
-                                        </div>
-                                        <div>
-                                            <h6 className="text-xl font-extrabold text-gray-900 tracking-tight">Ulasan Pengunjung</h6>
-                                            <div className="h-0.5 w-10 bg-yellow-400/40 rounded-full mt-1"></div>
-                                        </div>
-                                    </div>
-                                    {/* Rating badge */}
-                                    <div className="flex items-center gap-2 bg-yellow-50/50 px-3 py-1.5 rounded-xl">
-                                        <Icon icon="solar:star-bold" className="text-yellow-500 text-[14px]" />
-                                        <span className="text-[14px] font-black text-gray-800">4.94</span>
-                                        <span className="text-[11px] text-gray-400/50 font-semibold">/ 5.0 • 120+ ulasan</span>
-                                    </div>
-                                </div>
-                                {/* Horizontal scrollable review cards */}
-                                <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide -mx-1 px-1">
-                                    {[
-                                        { name: "Dinda Ayu", date: "25 Mar 2026", stars: 5, review: "Lapangan padel paling nyaman di Purwokerto, parkir luas, fasilitas kamar mandi bersih banget!", tag: "Padel" },
-                                        { name: "Bayu Kusuma", date: "19 Mar 2026", stars: 5, review: "Great court, good vibes. Definitely coming back for more matches with friends here.", tag: "Badminton" },
-                                        { name: "Rizky Pratama", date: "12 Mar 2026", stars: 4, review: "Fasilitas lengkap, AC dingin, dan pencahayaan lapangan oke banget. Recommended!", tag: "Futsal" },
-                                        { name: "Ayu Lestari", date: "8 Mar 2026", stars: 5, review: "Tempatnya bersih, staffnya ramah, dan booking-nya gampang banget lewat Kolektix. 10/10!", tag: "Padel" },
-                                        { name: "Hendra S.", date: "2 Mar 2026", stars: 5, review: "Lapangannya luas dan terawat. Harga terjangkau untuk kualitas sebagus ini. Pasti balik lagi!", tag: "Basket" },
-                                        { name: "Novita R.", date: "28 Feb 2026", stars: 4, review: "Parkir luas, aman, dan dekat dari pusat kota. Cocok buat main sore bareng teman-teman.", tag: "Voli" },
-                                    ].map((rv, i) => (
-                                        <div key={i} className="bg-white rounded-[24px] p-6 shadow-lg min-w-[320px] md:min-w-[400px] hover:shadow-2xl transition-all duration-500">
-                                            {/* Reviewer info */}
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <img
-                                                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${rv.name}&backgroundColor=b6e3f4,c0aede,d1d4f9&fontSize=40`}
-                                                    alt={rv.name}
-                                                    className="w-10 h-10 rounded-full"
-                                                />
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-[13px] font-black text-gray-800 truncate">{rv.name}</p>
-                                                    <p className="text-[11px] text-gray-400/50 font-medium">{rv.date}</p>
+                            {/* Courts & Slots Grid */}
+                            <div className="flex flex-col gap-6">
+                                {[1, 2, 3].map(courtNum => {
+                                    const slots = generateTimeSlots(courtNum);
+                                    const activeSlots = slots.filter(s => !s.isOffHours);
+                                    const availableSlotsCount = activeSlots.filter(s => !s.isBooked).length;
+                                    const isExpanded = expandedCourts.includes(courtNum);
+                                    
+                                    return (
+                                        <div key={courtNum} className="bg-white rounded-[24px] border border-[#d1d1d1] overflow-hidden flex flex-col shadow-sm transition-all hover:shadow-md">
+                                            {/* Top Header Card (Accordion Trigger & Info) */}
+                                            <div className="flex flex-col sm:flex-row relative">
+                                                {/* Left Image */}
+                                                <div className="w-full sm:w-[320px] h-[180px] sm:h-auto shrink-0 relative bg-gray-100 border-b sm:border-b-0 sm:border-r border-[#d1d1d1]">
+                                                    <ImageM 
+                                                        src={data?.gallery && data.gallery.length >= courtNum ? data.gallery[courtNum - 1].image_url : (data?.image_url || 'https://images.unsplash.com/photo-1546519638-68e109498ffc')} 
+                                                        w="100%" h="100%" fit="cover" 
+                                                    />
+                                                    {/* Optional dark gradient to make it look premium */}
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                                                 </div>
-                                                <span className="px-2 py-0.5 bg-primary-base/8 text-primary-base text-[10px] font-black rounded-lg shrink-0">{rv.tag}</span>
+
+                                                {/* Right Content */}
+                                                <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between">
+                                                    <div>
+                                                        <h3 className="text-[22px] font-black text-gray-900 mb-3 tracking-tight">Lapangan 0{courtNum}</h3>
+                                                        <div className="flex items-center gap-2 mb-6">
+                                                            <span className="px-3.5 py-1.5 border border-gray-200 rounded-xl text-[12px] font-bold text-gray-800 bg-white shadow-sm">
+                                                                Premium
+                                                            </span>
+                                                            <span className="px-3.5 py-1.5 border border-gray-200 rounded-xl text-[12px] font-bold text-gray-800 bg-white shadow-sm">
+                                                                Indoor
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Accordion Toggle Button */}
+                                                    <button 
+                                                        onClick={() => toggleCourt(courtNum)}
+                                                        className="w-full flex items-center justify-between px-5 py-4 bg-[#194e9e] hover:bg-[#123e80] rounded-xl text-white transition-all active:scale-[0.99] shadow-lg shadow-[#194e9e]/20"
+                                                    >
+                                                        <span className="text-[14px] font-black tracking-wide">{availableSlotsCount} Jadwal Tersedia</span>
+                                                        <Icon icon={isExpanded ? "solar:alt-arrow-up-bold" : "solar:alt-arrow-down-bold"} className="text-[18px]" />
+                                                    </button>
+                                                </div>
                                             </div>
-                                            {/* Stars */}
-                                            <div className="flex gap-0.5 mb-3">
-                                                {[1, 2, 3, 4, 5].map(s => (
-                                                    <Icon key={s} icon={s <= rv.stars ? 'solar:star-bold' : 'solar:star-linear'} className={`text-[13px] ${s <= rv.stars ? 'text-yellow-400' : 'text-gray-200'}`} />
-                                                ))}
-                                            </div>
-                                            {/* Review text */}
-                                            <p className="text-[13px] text-gray-600 font-medium leading-relaxed line-clamp-3">{rv.review}</p>
+
+                                            {/* Expanded Slots Area (Jadwal) */}
+                                            {isExpanded && (
+                                                <div className="border-t border-[#d1d1d1] p-5 sm:p-6 bg-white">
+                                                    {/* Desktop Grid Layout / Mobile Flex Scroll */}
+                                                    <div className="flex flex-wrap gap-3">
+                                                        {activeSlots.map((slot, idx) => {
+                                                            const slotKey = `${courtNum}-${slot.start}`;
+                                                            const isSelected = selectedSlots.includes(slotKey);
+                                                            return (
+                                                                <button
+                                                                    key={idx}
+                                                                    disabled={slot.isBooked}
+                                                                    onClick={() => toggleSlot(slotKey)}
+                                                                    className={`shrink-0 flex flex-col p-5 w-[170px] h-auto rounded-[24px] transition-all border-2 relative overflow-hidden group ${
+                                                                        slot.isBooked
+                                                                            ? 'bg-gray-50 border-gray-100 opacity-60 cursor-not-allowed'
+                                                                            : isSelected
+                                                                                ? 'bg-blue-50 border-[#194e9e] shadow-[0_10px_25px_-5px_rgba(25,78,158,0.2)]'
+                                                                                : 'bg-white border-gray-100 hover:border-[#194e9e] hover:bg-white hover:shadow-lg'
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex flex-col items-start w-full gap-1">
+                                                                        <div className="flex items-center justify-between w-full">
+                                                                            <span className={`text-[10px] font-black uppercase tracking-[0.1em] ${slot.isBooked ? 'text-gray-400' : isSelected ? 'text-blue-500' : 'text-gray-400'}`}>
+                                                                                {parseInt(slot.start.split(':')[0]) < 12 ? 'PAGI' : parseInt(slot.start.split(':')[0]) < 15 ? 'SIANG' : parseInt(slot.start.split(':')[0]) < 18 ? 'SORE' : 'MALAM'}
+                                                                            </span>
+                                                                            {isSelected && (
+                                                                                <div className="w-2.5 h-2.5 rounded-full bg-[#194e9e] shadow-[0_0_10px_rgba(25,78,158,0.5)]"></div>
+                                                                            )}
+                                                                        </div>
+                                                                        
+                                                                        <div className="flex flex-col mt-0.5">
+                                                                            <span className={`text-[17px] font-black tracking-tight leading-none ${slot.isBooked ? 'text-gray-400' : 'text-gray-900'}`}>
+                                                                                {slot.start} - {slot.end}
+                                                                            </span>
+                                                                            <span className={`text-[12px] font-black mt-1 ${slot.isBooked ? 'text-gray-400' : 'text-gray-900'}`}>
+                                                                                WIB
+                                                                            </span>
+                                                                        </div>
+                                                                        
+                                                                        <span className="text-[11px] font-bold text-gray-400 mt-1">60 Menit Durasi</span>
+                                                                        
+                                                                        <div className="w-full mt-5 pt-4 border-t border-gray-50 flex items-center justify-between">
+                                                                            {slot.isBooked ? (
+                                                                                <span className="text-[10px] font-black uppercase tracking-tight text-pink-400/80">TELAH DIPESAN</span>
+                                                                            ) : (
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="text-[13px] font-black text-[#194e9e] leading-none">Rp {slot.price.toLocaleString('id')}</span>
+                                                                                    <span className="text-[10px] font-bold text-gray-400 mt-0.5">/ orang</span>
+                                                                                </div>
+                                                                            )}
+                                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${slot.isBooked ? 'bg-gray-100' : 'bg-gray-50'}`}>
+                                                                                <Icon icon="solar:users-group-rounded-bold" className={`text-[16px] ${slot.isBooked ? 'text-gray-300' : 'text-gray-400'}`} />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                    ))}
-                                </div>
+                                    );
+                                })}
                             </div>
 
-                            {(!!data?.location_detail || data?.location?.startsWith('https://www.google.com/maps')) && (
-                                <div className="mt-4">
-                                    <h6 className="text-xl font-bold mb-4">Peta Lokasi & Pemandu Arah</h6>
+                        </div> {/* End Left Column */}
 
-                                    {!!data?.location_detail && <p className="text-grey mt-2 mb-4">{data?.location_detail}</p>}
-
-                                    {data?.location?.startsWith('https://www.google.com/maps') && (
-                                        <div className="mt-4 w-full rounded-2xl overflow-hidden shadow-lg">
-                                            <iframe
-                                                src={
-                                                    data?.location ??
-                                                    'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.239516341929!2d106.82918257586827!3d-6.232123761033168!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f3e8cbb9e497%3A0xc9b90fc0ac3963bc!2sMenara%20Kadin%20Indonesia%2C%20Jl.%20H.%20R.%20Rasuna%20Said%20Blok%20X-5%20No.Kav.%202-3%2C%20RT.1%2FRW.2%2C%20Kuningan%2C%20Kuningan%20Tim.%2C%20Kecamatan%20Setiabudi%2C%20Kota%20Jakarta%20Selatan%2C%20Daerah%20Khusus%20Ibukota%20Jakarta%2012950!5e0!3m2!1sid!2sid!4v1721144578839!5m2!1sid!2sid'
-                                                }
-                                                width="100%"
-                                                height="300"
-                                                style={{ border: 0 }}
-                                                allowFullScreen={false}
-                                                loading="lazy"
-                                                referrerPolicy="no-referrer-when-downgrade"
-                                            ></iframe>
-                                        </div>
+                        {/* RIGHT COLUMN: Sticky Sidebar CTA */}
+                        <div className="w-full lg:w-[380px] shrink-0 lg:sticky lg:top-[120px] flex flex-col gap-4">
+                            <div className="bg-white rounded-[24px] p-6 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-[#d1d1d1]">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-[14px] font-black tracking-[0.05em] text-[#194e9e] uppercase">LAPANGAN & JADWAL TERPILIH</h3>
+                                    {selectedSlots.length > 0 && (
+                                        <button 
+                                            onClick={() => setSelectedSlots([])}
+                                            className="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center text-pink-500 hover:bg-pink-100 transition-all border border-pink-100"
+                                            title="Hapus Semua"
+                                        >
+                                            <Icon icon="solar:close-circle-bold" className="text-[18px]" />
+                                        </button>
                                     )}
                                 </div>
-                            )}
-                        </div>
+                                
+                                {selectedSlots.length === 0 ? (
+                                    <div className="py-12 flex flex-col items-center justify-center text-center gap-3">
+                                        <Icon icon="solar:calendar-add-bold-duotone" className="text-[48px] text-gray-200" />
+                                        <p className="text-[13px] font-bold text-gray-400">Pilih jadwal untuk memulai</p>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-6 max-h-[400px] overflow-y-auto pr-2 stylish-scrollbar">
+                                        <div className="flex flex-col gap-5">
+                                            {Object.keys(groupedSlots).map((courtStr) => {
+                                                const courtNum = parseInt(courtStr);
+                                                const slots = groupedSlots[courtNum];
+                                                return (
+                                                    <div key={courtNum} className="flex flex-col gap-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                                                                <Icon icon="solar:basketball-bold" className="text-[16px]" />
+                                                            </div>
+                                                            <span className="text-[13px] font-black text-[#194e9e] uppercase tracking-wide">LAPANGAN 0{courtNum}</span>
+                                                        </div>
+                                                        <div className="flex flex-col gap-2 pl-2">
+                                                            {slots.map(slotKey => {
+                                                                const time = slotKey.split('-')[1];
+                                                                const hour = parseInt(time.split(':')[0]);
+                                                                const period = hour < 12 ? 'Pagi' : hour < 15 ? 'Siang' : hour < 18 ? 'Sore' : 'Malam';
+                                                                
+                                                                // Calculate end time
+                                                                const sTime = slotKey.split('-')[1];
+                                                                const sHour = parseInt(sTime.split(':')[0]);
+                                                                const eTime = `${(sHour + 1).toString().padStart(2, '0')}:00`;
 
-                        {/* No separate right sidebar – moved to hero section */}
+                                                                return (
+                                                                    <div key={slotKey} className="flex items-center justify-between group">
+                                                                        <div className="flex items-center gap-3 ml-2">
+                                                                            <Icon icon="solar:clock-circle-bold" className="text-[#194e9e] text-[16px]" />
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-[14px] font-black text-gray-900">{time} - {eTime} WIB</span>
+                                                                                <span className="text-[12px] font-bold text-gray-400">({period})</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <button 
+                                                                            onClick={() => toggleSlot(slotKey)}
+                                                                            className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center text-pink-500 hover:bg-pink-100 transition-colors"
+                                                                        >
+                                                                            <Icon icon="solar:trash-bin-trash-bold" className="text-[16px]" />
+                                                                        </button>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+
+                                        <div className="flex items-center gap-3 pt-4 border-t border-gray-50 text-gray-600">
+                                            <Icon icon="solar:calendar-bold" className="text-[18px] text-[#194e9e]" />
+                                            <span className="text-[14px] font-black">{daysIdShort[selectedDate.getDay()]}, {selectedDate.getDate()} {monthsIdShort[selectedDate.getMonth()]}</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="mt-8 pt-6 border-t border-[#d1d1d1] flex flex-col gap-4">
+                                    <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-[18px] border border-blue-100">
+                                        <div className="w-10 h-10 rounded-full bg-[#194e9e] flex items-center justify-center text-white shrink-0">
+                                            <Icon icon="solar:shield-check-bold" className="text-xl" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[11px] font-black text-[#194e9e] uppercase tracking-wider">Garansi Keamanan</p>
+                                            <p className="text-[10px] font-bold text-blue-400">Pembayaran aman & instan</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> {/* End Right Column */}
                     </div>
-                </div>{/* end max-w-6xl */}
-
+                </div>
 
                 <div ref={sectionRefs.lokasi} className="pb-10 bg-[#F7F8FA]"></div>
             </div>{/* end min-h-screen */}
-
-            {/* ── BOTTOM BOOKING BAR – Tiket.com style ── */}
-            <div className="w-full fixed flex items-center justify-between gap-4 bottom-0 bg-white z-50 p-6 md:px-12 shadow-[0_-15px_40px_rgba(0,0,0,0.08)]">
+            {/* ── BOTTOM BOOKING BAR – Only Visible when scrolling past hero ── */}
+            <div className={`w-full fixed flex items-center justify-between gap-4 bottom-0 bg-white z-50 py-4 px-6 md:px-12 shadow-[0_-15px_40px_rgba(0,0,0,0.08)] border-t border-[#d1d1d1] transition-all duration-500 ${
+                subNavSticky ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+            }`}>
                 {/* Left: price info */}
                 <div className="flex items-center gap-3">
                     {selectedSlots.length > 0 ? (
@@ -690,16 +791,17 @@ const VenueDetail = () => {
                         </button>
                     )}
                     <button
+                        disabled={selectedSlots.length === 0}
                         onClick={() => {
                             if (selectedSlots.length > 0) setModalBooking(true);
                             else sectionRefs.lapangan.current?.scrollIntoView({ behavior: 'smooth' });
                         }}
-                        className={`h-[48px] px-8 rounded-xl font-black text-[13px] uppercase tracking-widest active:scale-95 transition-all shadow-md ${selectedSlots.length > 0
-                            ? 'bg-[#194e9e] text-white shadow-[#194e9e]/20 hover:bg-[#123e80]'
-                            : 'bg-[#eef3fb] text-[#194e9e] hover:bg-[#dce8f9]'
+                        className={`h-[48px] px-8 rounded-xl font-black text-[13px] uppercase tracking-widest transition-all ${selectedSlots.length > 0
+                            ? 'bg-[#194e9e] text-white shadow-xl shadow-[#194e9e]/30 hover:bg-[#123e80] active:scale-95'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none'
                             }`}
                     >
-                        {selectedSlots.length > 0 ? 'Booking Sekarang' : 'Booking Sekarang'}
+                        Booking Sekarang
                     </button>
                 </div>
             </div>
@@ -870,4 +972,4 @@ const VenueDetail = () => {
     );
 };
 
-export default VenueDetail;
+export default PilihJadwal;

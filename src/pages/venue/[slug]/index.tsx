@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import foto from '../../assets/images/Banner-amis.png';
+import foto from '../../../assets/images/Banner-amis.png';
 import CreatorTitle from '@/components/Creator/CreatorTitle';
 import Button from '@/components/Button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -10,10 +10,10 @@ import { BreadcrumbItem, Breadcrumbs } from '@nextui-org/react';
 import InputField from '@/components/Input';
 import { useRouter } from 'next/router';
 import fetch from '@/utils/fetch';
-import { EventListResponse } from '../dashboard/my-event/type';
+import { EventListResponse } from '../../dashboard/my-event/type';
 import { useClickOutside, useListState, useSetState } from '@mantine/hooks';
 import { ActionIcon, AspectRatio, Box, Button as ButtonM, Card, Flex, Image as ImageM, Modal, NumberFormatter, Stack, Text, UnstyledButton, Tooltip } from '@mantine/core';
-import { VenueListResponse } from '../dashboard/venue/type';
+import { VenueListResponse } from '../../dashboard/venue/type';
 import useLoggedUser from '@/utils/useLoggedUser';
 import { Carousel } from '@mantine/carousel';
 import Link from 'next/link';
@@ -21,7 +21,7 @@ import Chat from '@/components/chat';
 import { DateInput as DateInputM, DatePickerInput } from '@mantine/dates';
 import moment from 'moment';
 import Cookies from 'js-cookie';
-import { VenueBookingOrder } from '../venue-order';
+import { VenueBookingOrder } from '../../venue-order';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import AuthModal from '@/components/AuthModal';
 
@@ -221,7 +221,9 @@ const VenueDetail = () => {
             name: dummyName,
             location: isPadel ? "Jl. KH. Ahmad Dahlan, Purwokerto" : "Jalan Pahlawan No. 45, Senayan, Jakarta",
             location_detail: "Lokasi persis di belakang area utama, area parkir sangat memadai.",
-            description: isPadel ? "BEST PADEL COURT IN PURWOKERTO #1. WE COME. WE PLAY. WE WIN.... NO TIME TO LOSE" : "Venue olahraga premium terbaik di kelasnya. Memiliki fasilitas yang sangat lengkap dengan standarisasi profesional.",
+            description: isPadel 
+                ? "BEST PADEL COURT IN PURWOKERTO #1. Fasilitas premium dengan standar internasional. Dilengkapi dengan area tunggu yang nyaman, loker, dan kamar bilas yang bersih. Cocok untuk bermain bersama teman atau pertandingan kompetitif. Kami menyediakan penyewaan raket dan bola padel berkualitas tinggi. Ayo segera booking jadwalmu dan rasakan pengalaman bermain padel terbaik!" 
+                : "Gelora Bung Karno Main Stadium adalah venue olahraga ikonik bertaraf internasional yang menawarkan fasilitas premium untuk semua kebutuhan acara Anda. \n\nDilengkapi dengan rumput standar FIFA, sistem pencahayaan modern 3500 lux, dan tribun penonton megah berkapasitas puluhan ribu jiwa, venue ini sangat ideal untuk pertandingan olahraga maupun event berskala besar. Setiap area dirancang dengan cermat untuk memberikan kenyamanan maksimal bagi para atlet dan kepuasan visual bagi penonton.\n\nSelain itu, venue ini terintegrasi dengan akses transportasi umum yang sangat mudah, halte TransJakarta dan stasiun MRT berada tepat di seberang kawasan. Fasilitas pendukung seperti ruang ganti VVIP, ruang konferensi pers, dan area komersial menjadikan stadion ini pilihan utama penyelenggara acara profesional.",
             starting_price: isPadel ? 30000 : 150000,
             max_capacity: 50,
             seat_capacity: 50,
@@ -230,7 +232,16 @@ const VenueDetail = () => {
                 { image_url: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=1200" },
                 { image_url: "https://images.unsplash.com/photo-1577223625816-7546f13df25d?q=80&w=1200" }
             ],
-            facility: ["Opsi pembayaran DP (Down Payment)", "Reschedule jadwal booking", "Lebih banyak promo & voucher", "Kamar Mandi / Shower", "Parkir Luas"],
+            facility: [
+                "Opsi pembayaran DP (Down Payment)", 
+                "Reschedule jadwal booking", 
+                "Lebih banyak promo & voucher", 
+                "Kamar Mandi / Shower", 
+                "Parkir Luas",
+                "Kantin / Area Makan",
+                "Sewa Alat Olahraga",
+                "Ruang Ganti & Loker Barang"
+            ],
             creator: {
                 name: "Gelora Bung Karno",
                 image_url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200"
@@ -348,39 +359,42 @@ const VenueDetail = () => {
                                     </div>
                                 </div>
                                 {/* Floating see all photos button */}
-                                <button
-                                    onClick={() => { setGalleryActiveIdx(0); setShowGallery(true); }}
-                                    className="absolute bottom-6 right-6 z-20 flex items-center gap-2 px-5 py-3 bg-white/90 backdrop-blur-md rounded-2xl text-gray-900 text-[12px] font-black shadow-2xl hover:bg-white hover:scale-105 transition-all outline outline-1 outline-gray-200"
-                                >
-                                    <Icon icon="solar:gallery-minimalistic-bold" className="text-[16px] text-[#194e9e]" />
-                                    Lihat semua {galleryImages.length} foto
-                                </button>
+                                <div className="absolute bottom-6 right-6 z-20">
+                                    <button
+                                        onClick={() => { setGalleryActiveIdx(0); setShowGallery(true); }}
+                                        className="flex flex-row items-center gap-2 px-5 py-3 bg-white hover:bg-gray-50 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.2)] hover:scale-105 transition-all outline outline-1 outline-gray-200"
+                                        style={{ color: '#0f172a' }}
+                                    >
+                                        <Icon icon="solar:gallery-minimalistic-bold" style={{ color: '#194e9e', fontSize: '16px' }} />
+                                        <span style={{ fontSize: '12px', fontWeight: 900 }}>Lihat semua {galleryImages.length} foto</span>
+                                    </button>
+                                </div>
                             </div>
 
                             {/* RIGHT – Harga Mulai Dari + Kreator + Chat Host */}
                             <div className="flex-1 shrink-0 flex flex-col gap-4">
-                                <div className="bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col border border-gray-100 h-full">
+                                <div className="bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col border border-gray-100 h-full text-slate-900">
                                     {/* HARGA WIDGET */}
                                     <div className="bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] px-6 py-8 border-b border-gray-100 flex-1">
-                                        <p className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">HARGA MULAI DARI</p>
+                                        <p className="!text-[#64748b] text-[10px] font-black uppercase tracking-[0.2em] mb-2">HARGA MULAI DARI</p>
                                         <div className="flex items-baseline gap-1.5">
-                                            <span className="text-gray-900 text-[36px] font-black leading-none tracking-tighter">
+                                            <span className="!text-[#0f172a] text-[36px] font-black leading-none tracking-tighter">
                                                 Rp{(data?.starting_price ?? 95000).toLocaleString('id')}
                                             </span>
-                                            <span className="text-gray-500 text-[14px] font-bold">/ sesi</span>
+                                            <span className="!text-[#64748b] text-[14px] font-bold">/ sesi</span>
                                         </div>
                                     </div>
 
-                                    {/* Creator Section */}
-                                    <div className="px-6 py-5 flex flex-col gap-3 shrink-0">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Penyelenggara</span>
+                                     {/* Creator Section */}
+                                    <div className="px-6 py-5 flex flex-col gap-3 shrink-0" style={{ color: '#0f172a' }}>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: '#64748b' }}>Penyelenggara</span>
                                         <div className="flex items-center gap-3 bg-white p-1 rounded-2xl">
                                             <div className="w-11 h-11 rounded-xl overflow-hidden shadow-sm">
                                                 <ImageM src={data?.creator?.image_url} w="100%" h="100%" fit="cover" />
                                             </div>
                                             <div className="flex flex-col min-w-0">
-                                                <span className="text-[14px] font-black tracking-tight text-gray-900 truncate">{data?.creator?.name}</span>
-                                                <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                                                <span className="text-[14px] font-black tracking-tight truncate" style={{ color: '#0f172a' }}>{data?.creator?.name}</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5" style={{ color: '#16a34a' }}>
                                                     <Icon icon="solar:verified-check-bold" /> Official
                                                 </span>
                                             </div>
@@ -406,28 +420,30 @@ const VenueDetail = () => {
                             </div>
                         </div>
 
-                        {/* Navigation Tabs (below image/card) */}
                         <div className="mt-10 border-b border-white/10">
                             <div className="flex items-center gap-8">
                                 {[
                                     { id: 'info', label: 'Deskripsi' },
-                                    { id: 'lapangan', label: 'Pilih Jadwal' },
                                     { id: 'ulasan', label: 'Ulasan' },
-                                    { id: 'syarat', label: 'Syarat & Ketentuan' },
+                                    { id: 'lokasi', label: 'Lokasi' },
+                                    { id: 'lapangan', label: 'Pilih Jadwal' },
                                 ].map((tab) => (
                                     <button
                                         key={tab.id}
                                         onClick={() => {
+                                            if (tab.id === 'lapangan') {
+                                                router.push(`/venue/${slug}/pilih-jadwal`);
+                                                return;
+                                            }
                                             const ref = sectionRefs[tab.id as keyof typeof sectionRefs];
-                                            ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start', offset: -100 } as any);
+                                            ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                         }}
                                         className={`pb-4 text-[14px] font-black uppercase tracking-widest transition-all relative ${activeSection === tab.id
-                                            ? 'text-white'
+                                            ? 'text-white border-b-4 border-white'
                                             : 'text-white/40 hover:text-white/70'
                                             }`}
                                     >
                                         {tab.label}
-                                        {activeSection === tab.id && <div className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-t-full" />}
                                     </button>
                                 ))}
                             </div>
@@ -445,13 +461,17 @@ const VenueDetail = () => {
                         <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
                             {[
                                 { id: 'info', label: 'Deskripsi' },
-                                { id: 'lapangan', label: 'Pilih Jadwal' },
                                 { id: 'ulasan', label: 'Ulasan' },
-                                { id: 'syarat', label: 'Syarat & Ketentuan' },
+                                { id: 'lokasi', label: 'Lokasi' },
+                                { id: 'lapangan', label: 'Pilih Jadwal' },
                             ].map((sec) => (
                                 <button
                                     key={sec.id}
                                     onClick={() => {
+                                        if (sec.id === 'lapangan') {
+                                            router.push(`/venue/${slug}/pilih-jadwal`);
+                                            return;
+                                        }
                                         const ref = sectionRefs[sec.id as keyof typeof sectionRefs];
                                         ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                     }}
@@ -475,11 +495,11 @@ const VenueDetail = () => {
 
                             {/* PROPERTY TITLE CARD */}
                             {/* PROPERTY TITLE CARD - REDESIGNED */}
-                            <div className="bg-white rounded-[32px] p-6 md:p-10 mb-6 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] relative overflow-hidden">
+                            <div className="bg-white rounded-[32px] p-6 md:p-10 mb-6 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-[#d1d1d1] relative overflow-hidden">
                                 <h1 className="font-exrabold text-3xl md:text-4xl text-gray-900 capitalize leading-tight mb-4 tracking-tight">{data?.name}</h1>
 
                                 {/* Rating & Location Row */}
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-8 border-b border-slate-100">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-8 border-b border-[#d1d1d1]">
                                     <div className="flex flex-col gap-2">
                                         <div className="flex items-center gap-2">
                                             <div className="flex items-center gap-0.5">
@@ -488,17 +508,17 @@ const VenueDetail = () => {
                                             <span className="text-[15px] font-black text-gray-800">4.94</span>
                                             <span className="text-[14px] text-gray-400 font-medium">(120+ ulasan)</span>
                                         </div>
-                                        {/* <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2">
                                             <Icon icon="solar:map-point-bold-duotone" className="text-primary-base text-lg" />
                                             <span className="text-[14px] text-gray-600 font-semibold line-clamp-1">{data?.location}</span>
-                                        </div> */}
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Description */}
                                 <div className="mb-8">
                                     <h6 className="text-[14px] font-black text-[#194e9e] uppercase tracking-[0.2em] mb-4">Deskripsi Venue</h6>
-                                    <p className="leading-relaxed text-gray-600 font-medium text-[15px]">
+                                    <p className="leading-relaxed text-gray-600 font-medium text-[15px] whitespace-pre-line">
                                         {data?.description}
                                     </p>
                                 </div>
@@ -512,6 +532,8 @@ const VenueDetail = () => {
                                             { text: 'Menggunakan sepatu olahraga yang sesuai', icon: 'solar:running-bold' },
                                             { text: 'Check-in 15 menit sebelum waktu mulai', icon: 'solar:clock-circle-bold' },
                                             { text: 'Menjaga kebersihan area lapangan', icon: 'solar:trash-bin-minimalistic-bold' },
+                                            { text: 'Dilarang merokok di area olahraga', icon: 'solar:no-smoking-bold' },
+                                            { text: 'Jaga dan amankan barang bawaan masing-masing', icon: 'solar:bag-heart-bold' },
                                         ].map((rule, idx) => (
                                             <li key={idx} className="flex items-start gap-2.5 text-[14px] text-gray-600 font-semibold">
                                                 <Icon icon={rule.icon} className="text-primary-base/40 text-lg shrink-0 mt-0.5" />
@@ -524,8 +546,8 @@ const VenueDetail = () => {
                                 {/* Facilities */}
                                 <div>
                                     <h6 className="text-[14px] font-black text-[#194e9e] uppercase tracking-[0.2em] mb-4">Fasilitas Venue</h6>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                                        {(data?.facility?.slice(0, 4) || []).map((el, idx) => {
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4">
+                                        {(data?.facility || []).map((el, idx) => {
                                             const facilityIcons: Record<string, string> = {
                                                 'DP': 'solar:card-bold',
                                                 'Down Payment': 'solar:card-bold',
@@ -538,14 +560,16 @@ const VenueDetail = () => {
                                                 'Wifi': 'solar:wifi-bold',
                                                 'AC': 'solar:wind-bold',
                                                 'Toilet': 'solar:bath-bold',
+                                                'Kantin': 'solar:shop-bold',
+                                                'Makan': 'solar:shop-bold',
+                                                'Sewa': 'solar:tag-bold',
+                                                'Loker': 'solar:safe-square-bold',
                                             };
                                             const icon = Object.keys(facilityIcons).find(k => el.toLowerCase().includes(k.toLowerCase()));
                                             return (
-                                                <div key={idx} className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50/50 hover:bg-white hover:shadow-lg transition-all group">
-                                                    <div className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:bg-primary-base transition-colors shrink-0">
-                                                        <Icon icon={icon ? facilityIcons[icon] : 'solar:check-circle-bold'} className="text-[16px] text-primary-base group-hover:text-white transition-colors" />
-                                                    </div>
-                                                    <span className="text-[12px] font-bold text-gray-700 leading-tight">{el}</span>
+                                                <div key={idx} className="flex items-center gap-3 group">
+                                                    <Icon icon={icon ? facilityIcons[icon] : 'solar:check-circle-bold'} className="text-[20px] text-gray-500 group-hover:text-[#194e9e] transition-colors shrink-0" />
+                                                    <span className="text-[14px] font-semibold tracking-tight text-gray-700 leading-tight">{el}</span>
                                                 </div>
                                             );
                                         })}
@@ -553,7 +577,7 @@ const VenueDetail = () => {
                                     {/* Baca selengkapnya button */}
                                     <button
                                         onClick={() => setShowDetailModal(true)}
-                                        className="mt-4 flex items-center gap-2 text-primary-base text-[13px] font-black hover:underline"
+                                        className="mt-5 flex items-center gap-2 text-primary-base text-[13px] font-black hover:underline"
                                     >
                                         <Icon icon="solar:document-text-bold" className="text-[15px]" />
                                         Baca selengkapnya
@@ -564,88 +588,70 @@ const VenueDetail = () => {
 
                             <div className="h-px bg-black/5 -mx-6 my-2"></div>
 
-                            {/* Pilih Lapangan section dipindah ke page berbeda */}
-
-                            <div ref={sectionRefs.ulasan} className="mt-6">
+                            <div ref={sectionRefs.ulasan} className="mt-12 bg-white rounded-[32px] p-6 md:p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-[#d1d1d1]">
                                 {/* Section header */}
-                                <div className="flex items-center justify-between mb-5">
+                                <div className="flex items-center justify-between mb-8">
                                     <div className="flex items-center gap-3">
-                                        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-yellow-50/50">
-                                            <Icon icon="solar:star-bold" className="text-yellow-500 text-[18px]" />
+                                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 text-[#194e9e]">
+                                            <Icon icon="solar:star-bold-duotone" className="text-2xl" />
                                         </div>
-                                        <div>
-                                            <h6 className="text-xl font-extrabold text-gray-900 tracking-tight">Ulasan Pengunjung</h6>
-                                            <div className="h-0.5 w-10 bg-yellow-400/40 rounded-full mt-1"></div>
-                                        </div>
+                                        <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Ulasan Pengunjung</h3>
                                     </div>
-                                    {/* Rating badge */}
-                                    <div className="flex items-center gap-2 bg-yellow-50/50 px-3 py-1.5 rounded-xl">
-                                        <Icon icon="solar:star-bold" className="text-yellow-500 text-[14px]" />
-                                        <span className="text-[14px] font-black text-gray-800">4.94</span>
-                                        <span className="text-[11px] text-gray-400/50 font-semibold">/ 5.0 • 120+ ulasan</span>
+                                    <button className="text-[13px] font-black text-[#194e9e] hover:underline">Lihat Semua</button>
+                                </div>
+                                
+                                {/* Static rating summary */}
+                                <div className="flex flex-col md:flex-row gap-8 mb-10 pb-8 border-b border-slate-50">
+                                    <div className="flex flex-col items-center justify-center bg-slate-50/50 rounded-[28px] p-8 border border-slate-100 min-w-[200px]">
+                                        <span className="text-5xl font-black text-gray-900">4.9</span>
+                                        <div className="flex text-yellow-400 text-xl my-2">
+                                            <Icon icon="solar:star-bold" /><Icon icon="solar:star-bold" /><Icon icon="solar:star-bold" /><Icon icon="solar:star-bold" /><Icon icon="solar:star-bold" />
+                                        </div>
+                                        <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">120+ Ulasan</span>
+                                    </div>
+                                    <div className="flex-1 flex flex-col justify-center gap-3">
+                                        {[5, 4, 3, 2, 1].map(star => (
+                                            <div key={star} className="flex items-center gap-4">
+                                                <span className="text-[12px] font-black text-gray-400 w-2">{star}</span>
+                                                <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-yellow-400 rounded-full" style={{ width: star === 5 ? '85%' : star === 4 ? '10%' : '5%' }}></div>
+                                                </div>
+                                                <span className="text-[12px] font-black text-gray-400 w-8">{star === 5 ? '85%' : star === 4 ? '10%' : '5%'}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
+
                                 {/* Horizontal scrollable review cards */}
-                                <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide -mx-1 px-1">
+                                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-2 px-2">
                                     {[
-                                        { name: "Dinda Ayu", date: "25 Mar 2026", stars: 5, review: "Lapangan padel paling nyaman di Purwokerto, parkir luas, fasilitas kamar mandi bersih banget!", tag: "Padel" },
-                                        { name: "Bayu Kusuma", date: "19 Mar 2026", stars: 5, review: "Great court, good vibes. Definitely coming back for more matches with friends here.", tag: "Badminton" },
-                                        { name: "Rizky Pratama", date: "12 Mar 2026", stars: 4, review: "Fasilitas lengkap, AC dingin, dan pencahayaan lapangan oke banget. Recommended!", tag: "Futsal" },
+                                        { name: "Rizky Pratama", date: "12 Mar 2026", stars: 5, review: "Fasilitas lengkap, AC dingin, dan pencahayaan lapangan oke banget. Recommended!", tag: "Futsal" },
                                         { name: "Ayu Lestari", date: "8 Mar 2026", stars: 5, review: "Tempatnya bersih, staffnya ramah, dan booking-nya gampang banget lewat Kolektix. 10/10!", tag: "Padel" },
                                         { name: "Hendra S.", date: "2 Mar 2026", stars: 5, review: "Lapangannya luas dan terawat. Harga terjangkau untuk kualitas sebagus ini. Pasti balik lagi!", tag: "Basket" },
                                         { name: "Novita R.", date: "28 Feb 2026", stars: 4, review: "Parkir luas, aman, dan dekat dari pusat kota. Cocok buat main sore bareng teman-teman.", tag: "Voli" },
                                     ].map((rv, i) => (
-                                        <div key={i} className="bg-white rounded-[24px] p-6 shadow-lg min-w-[320px] md:min-w-[400px] hover:shadow-2xl transition-all duration-500">
-                                            {/* Reviewer info */}
+                                        <div key={i} className="bg-white rounded-[24px] p-6 shadow-lg border border-[#d1d1d1] min-w-[320px] md:min-w-[400px] hover:shadow-2xl transition-all duration-500">
                                             <div className="flex items-center gap-3 mb-3">
-                                                <img
-                                                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${rv.name}&backgroundColor=b6e3f4,c0aede,d1d4f9&fontSize=40`}
-                                                    alt={rv.name}
-                                                    className="w-10 h-10 rounded-full"
-                                                />
+                                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 font-black text-xs border border-blue-100">
+                                                    {rv.name.charAt(0)}
+                                                </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-[13px] font-black text-gray-800 truncate">{rv.name}</p>
                                                     <p className="text-[11px] text-gray-400/50 font-medium">{rv.date}</p>
                                                 </div>
-                                                <span className="px-2 py-0.5 bg-primary-base/8 text-primary-base text-[10px] font-black rounded-lg shrink-0">{rv.tag}</span>
+                                                <span className="px-2 py-0.5 bg-blue-50 text-[#194e9e] text-[10px] font-black rounded-lg shrink-0">{rv.tag}</span>
                                             </div>
-                                            {/* Stars */}
                                             <div className="flex gap-0.5 mb-3">
                                                 {[1, 2, 3, 4, 5].map(s => (
                                                     <Icon key={s} icon={s <= rv.stars ? 'solar:star-bold' : 'solar:star-linear'} className={`text-[13px] ${s <= rv.stars ? 'text-yellow-400' : 'text-gray-200'}`} />
                                                 ))}
                                             </div>
-                                            {/* Review text */}
-                                            <p className="text-[13px] text-gray-600 font-medium leading-relaxed line-clamp-3">{rv.review}</p>
+                                            <p className="text-[13px] text-gray-600 font-medium leading-relaxed line-clamp-3 italic opacity-80">"{rv.review}"</p>
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
-                            {(!!data?.location_detail || data?.location?.startsWith('https://www.google.com/maps')) && (
-                                <div className="mt-4">
-                                    <h6 className="text-xl font-bold mb-4">Peta Lokasi & Pemandu Arah</h6>
-
-                                    {!!data?.location_detail && <p className="text-grey mt-2 mb-4">{data?.location_detail}</p>}
-
-                                    {data?.location?.startsWith('https://www.google.com/maps') && (
-                                        <div className="mt-4 w-full rounded-2xl overflow-hidden shadow-lg">
-                                            <iframe
-                                                src={
-                                                    data?.location ??
-                                                    'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.239516341929!2d106.82918257586827!3d-6.232123761033168!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f3e8cbb9e497%3A0xc9b90fc0ac3963bc!2sMenara%20Kadin%20Indonesia%2C%20Jl.%20H.%20R.%20Rasuna%20Said%20Blok%20X-5%20No.Kav.%202-3%2C%20RT.1%2FRW.2%2C%20Kuningan%2C%20Kuningan%20Tim.%2C%20Kecamatan%20Setiabudi%2C%20Kota%20Jakarta%20Selatan%2C%20Daerah%20Khusus%20Ibukota%20Jakarta%2012950!5e0!3m2!1sid!2sid!4v1721144578839!5m2!1sid!2sid'
-                                                }
-                                                width="100%"
-                                                height="300"
-                                                style={{ border: 0 }}
-                                                allowFullScreen={false}
-                                                loading="lazy"
-                                                referrerPolicy="no-referrer-when-downgrade"
-                                            ></iframe>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
                         </div>
 
                         {/* No separate right sidebar – moved to hero section */}
@@ -653,57 +659,109 @@ const VenueDetail = () => {
                 </div>{/* end max-w-6xl */}
 
 
-                <div ref={sectionRefs.lokasi} className="pb-10 bg-[#F7F8FA]"></div>
-            </div>{/* end min-h-screen */}
-
-            {/* ── BOTTOM BOOKING BAR – Tiket.com style ── */}
-            <div className="w-full fixed flex items-center justify-between gap-4 bottom-0 bg-white z-50 p-6 md:px-12 shadow-[0_-15px_40px_rgba(0,0,0,0.08)]">
-                {/* Left: price info */}
-                <div className="flex items-center gap-3">
-                    {selectedSlots.length > 0 ? (
-                        <div className="flex flex-col leading-tight">
-                            <Text fw={800} size="xs" c="dimmed" className="uppercase tracking-widest">Total {selectedSlots.length} Jadwal Terpilih</Text>
-                            <Text fw={900} size="xl" className="text-gray-900 leading-none">
-                                Rp{(selectedSlots.length * (data?.starting_price ?? 95000)).toLocaleString('id')}
-                            </Text>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col leading-tight">
-                            <Text fw={800} size="xs" c="dimmed" className="uppercase tracking-widest">Mulai dari</Text>
-                            <div className="flex items-baseline gap-1">
-                                <Text fw={900} size="xl" className="text-gray-900 leading-none">Rp{(data?.starting_price ?? 95000).toLocaleString('id')}</Text>
-                                <Text fw={700} size="xs" c="dimmed">/sesi</Text>
+                <div className="max-w-6xl mx-auto px-4 md:px-0">
+                    <div ref={sectionRefs.lokasi} className="pb-0 pt-6">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50/80 border border-blue-100">
+                                <Icon icon="solar:map-point-wave-bold" className="text-[#194e9e] text-[18px]" />
+                            </div>
+                            <div>
+                                <h6 className="text-[22px] font-black text-gray-900 tracking-tight">Lokasi & Pemandu Arah</h6>
+                                <div className="h-0.5 w-12 bg-[#194e9e]/40 rounded-full mt-1"></div>
                             </div>
                         </div>
-                    )}
+                        
+                        <div className="bg-white rounded-[32px] p-2 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-[#d1d1d1] flex flex-col md:flex-row gap-3">
+                            <div className="flex-[2] min-h-[350px] md:min-h-[450px] rounded-[24px] overflow-hidden relative">
+                                <iframe
+                                    src={
+                                        data?.location?.startsWith('http') ? data?.location :
+                                        'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.239516341929!2d106.82918257586827!3d-6.232123761033168!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f3e8cbb9e497%3A0xc9b90fc0ac3963bc!2sMenara%20Kadin%20Indonesia%2C%20Jl.%20H.%20R.%20Rasuna%20Said%20Blok%20X-5%20No.Kav.%202-3%2C%20RT.1%2FRW.2%2C%20Kuningan%2C%20Kuningan%20Tim.%2C%20Kecamatan%20Setiabudi%2C%20Kota%20Jakarta%20Selatan%2C%20Daerah%20Khusus%20Ibukota%20Jakarta%2012950!5e0!3m2!1sid!2sid!4v1721144578839!5m2!1sid!2sid'
+                                    }
+                                    width="100%"
+                                    height="100%"
+                                    style={{ border: 0, position: 'absolute', top: 0, left: 0 }}
+                                    allowFullScreen={false}
+                                    loading="lazy"
+                                    referrerPolicy="no-referrer-when-downgrade"
+                                ></iframe>
+                            </div>
+                            
+                            <div className="flex-1 p-5 lg:p-6 flex flex-col gap-6">
+                                <div>
+                                    <h6 className="text-[14px] font-black text-gray-900 mb-2 uppercase tracking-widest text-[#194e9e]">Alamat Lengkap</h6>
+                                    <p className="text-[14px] text-gray-700 font-semibold leading-relaxed">
+                                        {data?.location && !data.location.startsWith('http') ? data.location : "Kawasan Gelora Bung Karno, Jl. Pintu Satu Senayan, Jakarta Pusat"}
+                                    </p>
+                                    {!!data?.location_detail && <p className="text-[13px] text-gray-500 mt-2 font-medium">{data?.location_detail}</p>}
+                                </div>
+                                
+                                <div className="h-px bg-gray-100 w-full" />
+                                
+                                <div className="flex-1">
+                                    <h6 className="text-[14px] font-black text-gray-900 mb-5 tracking-wide">Transportasi UMKM Terdekat</h6>
+                                    <div className="flex flex-col gap-3">
+                                        {[
+                                            { name: "Kereta MRT / KRL / LRT", dist: "350m", type: "Stasiun Terdekat", icon: "solar:tram-bold", color: "text-blue-500", bg: "bg-blue-50" },
+                                            { name: "Busway / JakLingko", dist: "450m", type: "Halte Terdekat", icon: "solar:bus-bold", color: "text-green-500", bg: "bg-green-50" },
+                                            { name: "Kendaraan Pribadi", dist: "Lihat Rute", type: "Akses Jalan & Tol", icon: "mdi:car", color: "text-orange-500", bg: "bg-orange-50" },
+                                        ].map((transport, i) => (
+                                            <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-gray-50/50 hover:bg-gray-100/80 transition-all border border-[#d1d1d1] hover:border-[#999999]">
+                                                <div className="flex items-center gap-4 flex-1">
+                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${transport.bg}`}>
+                                                        <Icon icon={transport.icon} className={`text-[24px] ${transport.color}`} />
+                                                    </div>
+                                                    <div className="flex flex-col min-w-0">
+                                                        <h6 className="text-[15px] font-black text-gray-900 truncate">{transport.name}</h6>
+                                                        <p className="text-[12px] text-gray-500 font-bold mt-0.5">{transport.type} • <span className="text-[#194e9e] font-black">{transport.dist}</span></p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => window.open(data?.location?.startsWith('http') ? data.location : `https://google.com/maps/search/${encodeURIComponent((data?.name || '') + ' ' + (data?.location || ''))}`, '_blank')}
+                                                    className="shrink-0 whitespace-nowrap flex items-center justify-center gap-2 px-5 py-2.5 text-[#194e9e] bg-[#194e9e]/5 hover:bg-[#194e9e]/15 rounded-[12px] text-[12px] font-black uppercase tracking-widest transition-all"
+                                                >
+                                                    <Icon icon="solar:routing-2-bold" className="text-[18px]" />
+                                                    Cek Rute
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Right: CTA */}
-                <div className="flex items-center gap-3">
-                    {selectedSlots.length > 0 && (
-                        <button
-                            onClick={() => setModalBooking(true)}
-                            className="hidden sm:flex items-center gap-2 px-6 h-[48px] rounded-xl font-black text-[13px] uppercase tracking-wider text-primary-base bg-primary-light-100/50 hover:bg-primary-light-100 transition-all"
-                        >
-                            <Icon icon="solar:document-text-bold" className="text-lg" />
-                            Review
-                        </button>
-                    )}
-                    <button
-                        onClick={() => {
-                            if (selectedSlots.length > 0) setModalBooking(true);
-                            else sectionRefs.lapangan.current?.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        className={`h-[48px] px-8 rounded-xl font-black text-[13px] uppercase tracking-widest active:scale-95 transition-all shadow-md ${selectedSlots.length > 0
-                            ? 'bg-[#194e9e] text-white shadow-[#194e9e]/20 hover:bg-[#123e80]'
-                            : 'bg-[#eef3fb] text-[#194e9e] hover:bg-[#dce8f9]'
-                            }`}
-                    >
-                        {selectedSlots.length > 0 ? 'Booking Sekarang' : 'Booking Sekarang'}
-                    </button>
+                <div className="max-w-6xl mx-auto px-4 md:px-0">
+                    <div className="pb-36 pt-10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50/80 border border-blue-100">
+                                <Icon icon="solar:question-circle-bold" className="text-[#194e9e] text-[18px]" />
+                            </div>
+                            <div>
+                                <h6 className="text-[22px] font-black text-gray-900 tracking-tight">Pertanyaan Umum</h6>
+                                <div className="h-0.5 w-12 bg-[#194e9e]/40 rounded-full mt-1"></div>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {[
+                                { q: 'Apakah bisa menyewa raket atau bola di lokasi?', a: 'Ya, kami menyediakan penyewaan alat dengan harga terjangkau di lobby sebelum masuk lapangan.' },
+                                { q: 'Bagaimana jika hujan saat jadwal main saya?', a: 'Sebagian besar lapangan kami semi-indoor/indoor, namun jika cuaca memburuk dan lapangan outdoor tidak dapat digunakan, Anda dapat meminta reschedule.' },
+                                { q: 'Apakah ada fasilitas kamar mandi & loker?', a: 'Tentu. Tersedia toilet pria & wanita, kamar bilas air hangat, dan loker gratis (harap bawa gembok sendiri).' },
+                                { q: 'Bolehkah membawa pelatih balap dari luar?', a: 'Boleh, selama tidak mengganggu pengguna lapangan lain dan wajib menjaga kebersihan venue.' }
+                            ].map((faq, i) => (
+                                <div key={i} className="bg-white p-5 rounded-[24px] border border-[#d1d1d1] shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-10px_rgba(0,0,0,0.1)] transition-all">
+                                    <h6 className="text-[14px] font-black text-gray-900 mb-2 leading-snug tracking-tight">{faq.q}</h6>
+                                    <p className="text-[13px] text-gray-500 font-medium leading-relaxed">{faq.a}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
-            </div>
-
+            </div>{/* end min-h-screen */}
+            
+            {/* Full screen overlay and Detail Modals remain untouched */}
+            
             {/* Booking Modal */}
             <Modal opened={modalBooking} onClose={() => setModalBooking(false)} title="Pilih Tanggal Booking" centered radius="lg">
                 <Stack gap={15}>

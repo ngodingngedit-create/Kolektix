@@ -14,24 +14,30 @@ if (typeof window !== "undefined") {
 
     const token = localStorage.getItem("token");
 
-    window.echo = new Echo<any>({
-        broadcaster: "pusher",
-        key: process.env.NEXT_PUBLIC_PUSHER_KEY as string,
-        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "mt1", // Tambahkan default cluster jika tidak ada
-        wsHost: process.env.NEXT_PUBLIC_WS_HOST || "127.0.0.1",
-        wsPort: Number(process.env.NEXT_PUBLIC_WS_PORT) || 6000,
-        wssPort: Number(process.env.NEXT_PUBLIC_WSS_PORT) || 6000,
-        forceTLS: false,
-        encrypted: false,
-        disableStats: true,
-        enabledTransports: ["ws"],
-        authEndpoint: `${process.env.NEXT_PUBLIC_BACKEND_HOST}/broadcasting/auth`,
-        auth: {
-            headers: {
-                Authorization: token ? `Bearer ${token}` : "",
+    const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY;
+
+    if (pusherKey) {
+        window.echo = new Echo<any>({
+            broadcaster: "pusher",
+            key: pusherKey,
+            cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "mt1", // Tambahkan default cluster jika tidak ada
+            wsHost: process.env.NEXT_PUBLIC_WS_HOST || "127.0.0.1",
+            wsPort: Number(process.env.NEXT_PUBLIC_WS_PORT) || 6000,
+            wssPort: Number(process.env.NEXT_PUBLIC_WSS_PORT) || 6000,
+            forceTLS: false,
+            encrypted: false,
+            disableStats: true,
+            enabledTransports: ["ws"],
+            authEndpoint: `${process.env.NEXT_PUBLIC_BACKEND_HOST}/broadcasting/auth`,
+            auth: {
+                headers: {
+                    Authorization: token ? `Bearer ${token}` : "",
+                },
             },
-        },
-    });
+        });
+    } else {
+        window.echo = null;
+    }
 }
 
 export default typeof window !== "undefined" ? window.echo : null;
