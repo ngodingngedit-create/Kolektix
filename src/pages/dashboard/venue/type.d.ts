@@ -56,6 +56,7 @@ interface Venue {
     venue_facility_id?: number[];
     name: string;
     slug: string;
+    category?: string;
     image: string;
     description: string;
     location: string;

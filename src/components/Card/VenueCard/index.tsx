@@ -94,7 +94,7 @@ const VenueCard = ({ id, bookmark_id, slug, title, image, location, price, categ
       }
 
   // Get short city name for the image overlay
-  const shortCity = location.split(',')[1]?.trim() || location.split(',')[0];
+  const shortCity = (location || '').split(',')[1]?.trim() || (location || '').split(',')[0] || 'Unknown';
 
   // Dynamic facility text based on category
   let fasilitasText = 'Multifungsi & Serbaguna';
@@ -186,8 +186,17 @@ const VenueCard = ({ id, bookmark_id, slug, title, image, location, price, categ
         <div className="mt-auto bg-slate-50/50 -mx-6 -mb-6 px-6 py-5 flex items-center justify-between gap-2">
           <div className="flex flex-col min-w-0">
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5 opacity-80">Mulai dari</p>
-            <p className="font-extrabold text-[18px] md:text-[20px] text-gray-900 leading-none truncate">
-              <NumberFormatter value={price} prefix="Rp " thousandSeparator="." decimalSeparator="," />
+            <p className="font-extrabold text-[18px] md:text-[20px] text-gray-900 leading-none truncate flex items-start">
+              {price >= 10000000 ? (
+                <>
+                  Rp{(price / 1000).toLocaleString('id')}
+                  <span className="ml-1 mt-[2px] text-[8px] md:text-[9px] font-black tracking-widest uppercase bg-green-50 text-green-600 px-1.5 py-[2px] rounded-md border border-green-200/50 shadow-sm leading-none flex items-center gap-0.5">
+                    <Icon icon="solar:wallet-bold-duotone" className="text-[10px] hidden md:block" /> Million
+                  </span>
+                </>
+              ) : (
+                <NumberFormatter value={price} prefix="Rp" thousandSeparator="." decimalSeparator="," />
+              )}
             </p>
           </div>
 

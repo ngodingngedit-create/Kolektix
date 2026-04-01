@@ -146,153 +146,137 @@ const Venue = () => {
     <Container mih="90vh" mt={{ base: 40, md: 60 }} size="xl" className="px-4 md:px-8 pb-10">
       <Stack gap={30}>
 
-        <div className="relative z-20 w-full max-w-5xl mx-auto mt-6 md:mt-12">
-          {/* Main Search Bar Wrapper */}
-          <div className="flex flex-col md:flex-row items-center gap-3 bg-white p-3 lg:p-4 rounded-3xl shadow-[0_15px_50px_-10px_rgba(0,0,0,0.1)]">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mt-6 md:mt-12 relative z-20">
+          <Stack gap={6}>
+            <Title size="h2" fw={800} className="text-gray-900 tracking-tight text-2xl md:text-3xl">Pilihan Kategori</Title>
+            <Text size="md" c="dimmed" fw={500}>Temukan ruang acara, meeting room, olahraga, dan lainnya.</Text>
+          </Stack>
 
-            {/* Search Input Field */}
-            <div className="flex-1 w-full flex items-center gap-3 bg-slate-50 px-5 py-3.5 rounded-2xl focus-within:bg-white focus-within:ring-4 focus-within:ring-primary-base/5 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.03)]">
-              <Icon icon="solar:minimalistic-magnifer-linear" className="text-gray-400 text-[20px] shrink-0" />
-              <input
-                type="text"
-                placeholder="Cari nama venue, lokasi, dll..."
-                className="bg-transparent border-none outline-none text-[15px] font-medium text-gray-700 placeholder:text-gray-400 w-full h-full"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            {/* Dropdown & Button Actions */}
-            <div className="flex items-center w-full md:w-auto gap-3 shrink-0">
-              {/* Sort Dropdown */}
-              <div className="flex items-center gap-2 bg-slate-50 px-5 py-3.5 rounded-2xl hover:bg-white hover:shadow-md transition-all w-full md:w-auto shadow-[inset_0_2px_4px_rgba(0,0,0,0.03)]">
-                <Icon icon="solar:sort-from-top-to-bottom-line-duotone" className="text-primary-base text-[20px] shrink-0" />
-                <select
-                  className="bg-transparent border-none outline-none text-[14px] font-bold text-gray-700 w-full md:w-[130px] cursor-pointer appearance-none"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                >
-                  <option value="Rekomendasi">Rekomendasi</option>
-                  <option value="Harga Terendah">Harga Terendah</option>
-                  <option value="Harga Tertinggi">Harga Tertinggi</option>
-                </select>
-                <Icon icon="solar:alt-arrow-down-bold" className="text-gray-400 text-[12px] shrink-0 ml-1" />
-              </div>
-
-              {/* Filter Button */}
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center justify-center gap-2 h-[52px] px-6 rounded-2xl font-bold transition-all text-[14px] shrink-0
-                  ${showFilters
-                    ? 'bg-black text-white shadow-xl shadow-black/25 ring-4 ring-black/5'
-                    : 'bg-white text-gray-700 hover:bg-slate-50 shadow-md'
-                  }`}
+          {/* Filtering & Sorting */}
+          <div className="flex items-center w-full md:w-auto gap-3 shrink-0">
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-2 bg-white px-5 py-3.5 rounded-2xl hover:bg-slate-50 transition-all w-full md:w-auto shadow-sm border border-gray-100">
+              <Icon icon="solar:sort-from-top-to-bottom-line-duotone" className="text-primary-base text-[20px] shrink-0" />
+              <select
+                className="bg-transparent border-none outline-none text-[13px] font-bold text-gray-700 w-full md:w-[130px] cursor-pointer appearance-none"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
               >
-                <Icon icon={showFilters ? "solar:close-circle-bold" : "solar:filter-bold-duotone"} className="text-[20px]" />
-                <span>{showFilters ? 'Tutup' : 'Filter Lanjut'}</span>
-              </button>
+                <option value="Rekomendasi">Rekomendasi</option>
+                <option value="Harga Terendah">Harga Terendah</option>
+                <option value="Harga Tertinggi">Harga Tertinggi</option>
+              </select>
+              <Icon icon="solar:alt-arrow-down-bold" className="text-gray-400 text-[12px] shrink-0 ml-1" />
             </div>
+
+            {/* Filter Button */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center justify-center gap-2 h-[52px] px-6 rounded-2xl font-black uppercase tracking-wider transition-all text-[12px] shrink-0
+                ${showFilters
+                  ? 'bg-black text-white shadow-xl shadow-black/25 ring-4 ring-black/5'
+                  : 'bg-[#194e9e] text-white shadow-lg shadow-[#194e9e]/20 hover:bg-[#123e80]'
+                }`}
+            >
+              <Icon icon={showFilters ? "solar:close-circle-bold" : "solar:filter-bold-duotone"} className="text-[18px]" />
+              <span>{showFilters ? 'Tutup' : 'Filter Lanjut'}</span>
+            </button>
           </div>
-
-          {/* Expanded Filters Panel */}
-          <Collapse in={showFilters}>
-            <div className="bg-white rounded-[32px] p-8 lg:p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] mt-6 overflow-hidden relative">
-              <div className="flex items-center gap-3 mb-8 pb-6 border-b border-slate-100">
-                <Icon icon="solar:tuning-square-2-bold-duotone" className="text-primary-base text-[28px]" />
-                <h3 className="font-extrabold text-gray-800 text-[18px]">Filter Pencarian Spesifik</h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* KOTA */}
-                <div className="flex flex-col gap-3.5">
-                  <span className="text-[11px] font-black text-gray-400 tracking-widest uppercase flex items-center gap-1.5">
-                    <Icon icon="solar:map-point-bold-duotone" className="text-[14px]" /> Lokasi Kota
-                  </span>
-                  <div className="flex flex-wrap gap-2.5">
-                    {LocationOptions.map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => setSelectedCity(opt)}
-                        className={`px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300 
-                          ${selectedCity === opt
-                            ? 'bg-primary-base text-white shadow-lg shadow-primary-base/30'
-                            : 'bg-slate-50 text-gray-600 hover:bg-white hover:shadow-md'
-                          }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* JENIS OLAHRAGA */}
-                <div className="flex flex-col gap-3.5">
-                  <span className="text-[11px] font-black text-gray-400 tracking-widest uppercase flex items-center gap-1.5">
-                    <Icon icon="solar:basketball-bold-duotone" className="text-[14px]" /> Jenis Olahraga
-                  </span>
-                  <div className="flex flex-wrap gap-2.5">
-                    {SportOptions.map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => setSelectedSport(opt)}
-                        className={`px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300 
-                          ${selectedSport === opt
-                            ? 'bg-primary-base text-white shadow-lg shadow-primary-base/30'
-                            : 'bg-slate-50 text-gray-600 hover:bg-white hover:shadow-md'
-                          }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* HARGA */}
-                <div className="flex flex-col gap-3.5">
-                  <span className="text-[11px] font-black text-gray-400 tracking-widest uppercase flex items-center gap-1.5">
-                    <Icon icon="solar:wallet-bold-duotone" className="text-[14px]" /> Rentang Harga
-                  </span>
-                  <div className="flex flex-wrap gap-2.5">
-                    {PriceOptions.map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => setSelectedPrice(opt)}
-                        className={`px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300 
-                          ${selectedPrice === opt
-                            ? 'bg-primary-base text-white shadow-lg shadow-primary-base/30'
-                            : 'bg-slate-50 text-gray-600 hover:bg-white hover:shadow-md'
-                          }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Reset Filters Option */}
-              {(selectedCity !== 'Semua' || selectedSport !== 'Semua' || selectedPrice !== 'Semua') && (
-                <div className="mt-8 flex justify-end">
-                  <button
-                    onClick={() => {
-                      setSelectedCity('Semua');
-                      setSelectedSport('Semua');
-                      setSelectedPrice('Semua');
-                    }}
-                    className="text-[13px] font-bold text-red-500 hover:text-red-700 underline decoration-red-500/30 underline-offset-4 transition-colors flex items-center gap-1"
-                  >
-                    <Icon icon="solar:trash-bin-trash-bold" /> Reset Semua Filter
-                  </button>
-                </div>
-              )}
-            </div>
-          </Collapse>
         </div>
 
-        <Stack gap={6} className="mt-8">
-          <Title size="h2" fw={800} className="text-gray-900 tracking-tight text-2xl md:text-3xl">Pilihan Kategori</Title>
-          <Text size="md" c="dimmed" fw={500}>Temukan ruang acara, meeting room, olahraga, dan lainnya.</Text>
-        </Stack>
+        {/* Expanded Filters Panel */}
+        <Collapse in={showFilters}>
+          <div className="bg-white rounded-[32px] p-8 lg:p-10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] mt-2 overflow-hidden relative">
+            <div className="flex items-center gap-3 mb-8 pb-6 border-b border-slate-100">
+              <Icon icon="solar:tuning-square-2-bold-duotone" className="text-primary-base text-[28px]" />
+              <h3 className="font-extrabold text-gray-800 text-[18px]">Filter Pencarian Spesifik</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* KOTA */}
+              <div className="flex flex-col gap-3.5">
+                <span className="text-[11px] font-black text-gray-400 tracking-widest uppercase flex items-center gap-1.5">
+                  <Icon icon="solar:map-point-bold-duotone" className="text-[14px]" /> Lokasi Kota
+                </span>
+                <div className="flex flex-wrap gap-2.5">
+                  {LocationOptions.map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => setSelectedCity(opt)}
+                      className={`px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300 
+                        ${selectedCity === opt
+                          ? 'bg-primary-base text-white shadow-lg shadow-primary-base/30'
+                          : 'bg-slate-50 text-gray-600 hover:bg-white hover:shadow-md'
+                        }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* JENIS OLAHRAGA */}
+              <div className="flex flex-col gap-3.5">
+                <span className="text-[11px] font-black text-gray-400 tracking-widest uppercase flex items-center gap-1.5">
+                  <Icon icon="solar:basketball-bold-duotone" className="text-[14px]" /> Jenis Olahraga
+                </span>
+                <div className="flex flex-wrap gap-2.5">
+                  {SportOptions.map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => setSelectedSport(opt)}
+                      className={`px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300 
+                        ${selectedSport === opt
+                          ? 'bg-primary-base text-white shadow-lg shadow-primary-base/30'
+                          : 'bg-slate-50 text-gray-600 hover:bg-white hover:shadow-md'
+                        }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* HARGA */}
+              <div className="flex flex-col gap-3.5">
+                <span className="text-[11px] font-black text-gray-400 tracking-widest uppercase flex items-center gap-1.5">
+                  <Icon icon="solar:wallet-bold-duotone" className="text-[14px]" /> Rentang Harga
+                </span>
+                <div className="flex flex-wrap gap-2.5">
+                  {PriceOptions.map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => setSelectedPrice(opt)}
+                      className={`px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300 
+                        ${selectedPrice === opt
+                          ? 'bg-primary-base text-white shadow-lg shadow-primary-base/30'
+                          : 'bg-slate-50 text-gray-600 hover:bg-white hover:shadow-md'
+                        }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Reset Filters Option */}
+            {(selectedCity !== 'Semua' || selectedSport !== 'Semua' || selectedPrice !== 'Semua') && (
+              <div className="mt-8 flex justify-end">
+                <button
+                  onClick={() => {
+                    setSelectedCity('Semua');
+                    setSelectedSport('Semua');
+                    setSelectedPrice('Semua');
+                  }}
+                  className="text-[13px] font-bold text-red-500 hover:text-red-700 underline decoration-red-500/30 underline-offset-4 transition-colors flex items-center gap-1"
+                >
+                  <Icon icon="solar:trash-bin-trash-bold" /> Reset Semua Filter
+                </button>
+              </div>
+            )}
+          </div>
+        </Collapse>
 
         <Flex align="center" gap={16} className={`overflow-x-auto pb-6 scrollbar-hide px-1`}>
           {[{ name: 'Semua', icon_menu: 'solar:widget-3-bold-duotone' }, ...Array.from(new Set(_data.map(item => item.has_venue_category?.name))).filter(Boolean).map(name => {
