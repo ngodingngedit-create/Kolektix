@@ -21,7 +21,6 @@ import Chat from '@/components/chat';
 import { DateInput as DateInputM, DatePickerInput, DatePicker } from '@mantine/dates';
 import moment from 'moment';
 import Cookies from 'js-cookie';
-import { VenueBookingOrder } from '../../venue-order';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import AuthModal from '@/components/AuthModal';
 
@@ -49,10 +48,10 @@ const generateTimeSlots = (courtNum: number, date: Date) => {
         : courtNum === 2
             ? [8, 9, 14, 15].map(h => (h + dayShift) % 24)
             : [10, 11, 12].map(h => (h + dayShift) % 24);
-    
+
     // Some courts might be "Closed" or "Fully Booked" on certain dates for simulation
     const isFullyBooked = (date.getDay() === 0 && courtNum === 3); // Sunday, Court 3 is closed
-    
+
     const slots = [];
     for (let h = 0; h < 24; h++) {
         const start = `${String(h).padStart(2, '0')}:00`;
@@ -136,10 +135,10 @@ const PilihJadwal = () => {
             const parts = key.split('-');
             const dateStr = `${parts[0]}-${parts[1]}-${parts[2]}`; // YYYY-MM-DD
             const courtNum = parseInt(parts[3]);
-            
+
             if (!acc[dateStr]) acc[dateStr] = {};
             if (!acc[dateStr][courtNum]) acc[dateStr][courtNum] = [];
-            
+
             acc[dateStr][courtNum].push(key);
             return acc;
         }, {});
@@ -598,7 +597,7 @@ const PilihJadwal = () => {
                                     {/* Static Divider & Calendar Button Fixed Right */}
                                     <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 h-[70px] sm:h-[80px]">
                                         <div className="w-[1.5px] h-[40px] sm:h-[50px] bg-[#d1d1d1] shrink-0 rounded-full"></div>
-                                        
+
                                         <Popover opened={showCalendar} onChange={setShowCalendar} position="bottom-end" shadow="md" radius="xl">
                                             <Popover.Target>
                                                 <button
@@ -780,7 +779,7 @@ const PilihJadwal = () => {
                                             {Object.keys(groupedSlotsByDate).sort().map((dateStr) => {
                                                 const dateObj = new Date(dateStr);
                                                 const courtGroups = groupedSlotsByDate[dateStr];
-                                                
+
                                                 return (
                                                     <div key={dateStr} className="flex flex-col gap-4">
                                                         {/* DATE HEADER */}
@@ -925,9 +924,9 @@ const PilihJadwal = () => {
             </div>
 
             {/* Mobile Jadwal Detail Bottom Sheet */}
-            <Drawer 
-                opened={showMobileDetail} 
-                onClose={() => setShowMobileDetail(false)} 
+            <Drawer
+                opened={showMobileDetail}
+                onClose={() => setShowMobileDetail(false)}
                 position="bottom"
                 size="auto"
                 radius="24px 24px 0 0"
@@ -970,7 +969,7 @@ const PilihJadwal = () => {
                                                                 <Icon icon="solar:ticket-bold" className="text-[18px]" />
                                                             </div>
                                                             <span className="text-[13px] font-black text-gray-800 uppercase tracking-wide">LAPANGAN 0{courtNum}</span>
-                                                            <button 
+                                                            <button
                                                                 onClick={() => {
                                                                     setSelectedSlots(prev => prev.filter(s => !s.includes(`-${courtNum}-`)));
                                                                 }}
@@ -995,7 +994,7 @@ const PilihJadwal = () => {
                                                                         </div>
                                                                         <div className="flex items-center gap-4">
                                                                             <span className="text-[14px] font-black text-gray-900 line-clamp-1">Rp{(data?.starting_price ?? 95000).toLocaleString('id')}</span>
-                                                                            <button 
+                                                                            <button
                                                                                 onClick={() => toggleSlot(slotKey)}
                                                                                 className="text-red-500 hover:text-red-600 transition-colors p-1"
                                                                             >

@@ -12,7 +12,7 @@ import fetch from "@/utils/fetch";
 import useWindowSize from "@/utils/useWindowSize";
 import Countdown, { CountdownRendererFn } from "react-countdown";
 
-interface VenueBookingOrder {
+export interface VenueBookingOrder {
     id: number;
     slug: string;
     selected_slots: string[];

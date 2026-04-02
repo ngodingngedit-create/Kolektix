@@ -282,8 +282,7 @@ const VenueDetail = () => {
             Cookies.set('venue_order_data', JSON.stringify({
                 id: data?.id,
                 slug: data?.slug,
-                date_start: date.start,
-                date_end: date.end
+                selected_slots: selectedSlots
             } as VenueBookingOrder));
             setLoading.append('submit');
             router.push('/venue-order');
