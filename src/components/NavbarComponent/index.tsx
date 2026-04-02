@@ -1369,7 +1369,7 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setShowFilter(false);
-  }, [asPath]);
+  }, [route]);
 
   const handleLogout = () => {
     modals.openConfirmModal({
@@ -1417,6 +1417,13 @@ export default function NavbarComponent({ children }: { children: ReactNode }) {
       }, 200);
     }
   }]]);
+
+  // 3) Sinkronkan showFilter dengan query parameter 'show_filters'
+  useEffect(() => {
+    if (router.query.show_filters === 'true') {
+      setShowFilter(true);
+    }
+  }, [router.query.show_filters, setShowFilter]);
 
   // Cek apakah halaman saat ini adalah error page
   const isErrorPage = route === '/404' || route === '/_error' || asPath.includes('404');

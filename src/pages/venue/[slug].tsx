@@ -98,6 +98,8 @@ const VenueDetail = () => {
     const [filterSport, setFilterSport] = useState<string[]>([]);
     const calendarRef = React.useRef<HTMLDivElement>(null);
     const filterRef = React.useRef<HTMLDivElement>(null);
+    const [isMobile, setIsMobile] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewInput, setReviewInput] = useState("");
     const [reviewStars, setReviewStars] = useState(0);
@@ -132,6 +134,15 @@ const VenueDetail = () => {
             }, 500);
         }
     });
+
+    // Detect mobile on mount and resize
+    useEffect(() => {
+        setMounted(true);
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener('resize', check);
+        return () => window.removeEventListener('resize', check);
+    }, []);
 
     // Sub-navbar sticky: becomes sticky after scrolling past hero section
     useEffect(() => {
@@ -354,57 +365,59 @@ const VenueDetail = () => {
                                 </button>
                             </div>
 
-                            {/* RIGHT – Harga Mulai Dari + Kreator + Chat Host */}
+                            {/* RIGHT – Harga Mulai Dari + Kreator + Chat Host — DESKTOP ONLY */}
+                            {mounted && !isMobile && (
                             <div className="flex-1 shrink-0 flex flex-col gap-4">
-                                <div className="bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col border border-gray-100 h-full">
+                                <div className="bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col border border-[#d1d1d1] h-full" style={{ color: '#0f172a' }}>
                                     {/* HARGA WIDGET */}
-                                    <div className="bg-[#194e9e] px-6 py-8 border-b border-[#123e80] flex-1">
-                                        <p className="text-white/80 text-[10px] font-black uppercase tracking-[0.2em] mb-2">HARGA MULAI DARI</p>
+                                    <div className="bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] px-6 py-6 md:py-8 border-b border-[#d1d1d1] flex-1 flex flex-col justify-center">
+                                        <p style={{ color: '#64748b' }} className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">HARGA MULAI DARI</p>
                                         <div className="flex items-baseline gap-1.5">
-                                            <span className="text-white text-[36px] font-black leading-none tracking-tighter">
+                                            <span style={{ color: '#0f172a' }} className="text-[32px] md:text-[36px] font-black leading-none tracking-tighter">
                                                 Rp{(data?.starting_price ?? 95000).toLocaleString('id')}
                                             </span>
-                                            <span className="text-white/70 text-[14px] font-bold">/ sesi</span>
+                                            <span style={{ color: '#64748b' }} className="text-[14px] font-bold">/ sesi</span>
                                         </div>
                                     </div>
 
                                     {/* Creator Section */}
-                                    <div className="px-6 py-5 flex flex-col gap-3 shrink-0">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Penyelenggara</span>
+                                    <div className="px-6 py-4 md:py-5 flex flex-col gap-2.5 shrink-0" style={{ color: '#0f172a' }}>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: '#64748b' }}>Penyelenggara</span>
                                         <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-2xl border border-gray-100">
                                             <div className="w-11 h-11 rounded-xl overflow-hidden shadow-sm bg-gray-200 shrink-0 flex items-center justify-center">
                                                 {data?.creator?.image_url ? (
                                                     <img src={data.creator.image_url} alt={data.creator.name || ''} className="w-full h-full object-cover" />
                                                 ) : (
-                                                    <Icon icon="solar:user-bold" className="text-gray-400 text-[22px]" />
+                                                    <Icon icon="solar:user-bold" className="text-gray-400 text-[20px]" />
                                                 )}
                                             </div>
                                             <div className="flex flex-col min-w-0">
-                                                <span className="text-[14px] font-black tracking-tight text-gray-900 truncate">{data?.creator?.name || 'Kreator'}</span>
-                                                <span className="text-[10px] font-bold text-green-600 uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                                                <span className="text-[13px] md:text-[14px] font-black tracking-tight truncate" style={{ color: '#0f172a' }}>{data?.creator?.name || 'Kreator'}</span>
+                                                <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5" style={{ color: '#16a34a' }}>
                                                     <Icon icon="solar:verified-check-bold" /> Official
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="px-6 pb-6 pt-2 flex flex-col gap-3 shrink-0">
+                                    <div className="px-6 pb-6 pt-1 flex flex-col gap-3 shrink-0">
                                         <button
                                             onClick={() => setOpenChat(true)}
-                                            className="w-full py-4 rounded-xl font-black text-[13px] uppercase tracking-widest text-[#194e9e] bg-blue-50/50 hover:bg-blue-50 border border-blue-100 hover:border-blue-200 transition-all text-center flex items-center justify-center gap-2"
+                                            className="w-full py-3.5 md:py-4 rounded-xl font-black text-[12px] md:text-[13px] uppercase tracking-widest text-[#194e9e] bg-blue-50/50 hover:bg-blue-50 border border-blue-100 hover:border-blue-200 transition-all text-center flex items-center justify-center gap-2"
                                         >
-                                            <Icon icon="solar:chat-round-dots-bold" className="text-[18px]" />
+                                            {/* <Icon icon="solar:chat-round-dots-bold" className="text-[18px]" /> */}
                                             Chat Host
                                         </button>
                                         <button
                                             onClick={() => router.push(`/venue/${slug}/pilih-jadwal`)}
-                                            className="w-full py-4 rounded-xl font-black text-[13px] uppercase tracking-widest bg-[#194e9e] text-white shadow-xl shadow-[#194e9e]/30 hover:bg-[#123e80] active:scale-[0.98] transition-all text-center"
+                                            className="w-full py-3.5 md:py-4 rounded-xl font-black text-[12px] md:text-[13px] uppercase tracking-widest bg-[#194e9e] text-white shadow-xl shadow-[#194e9e]/30 hover:bg-[#123e80] active:scale-[0.98] transition-all text-center flex items-center justify-center gap-2"
                                         >
                                             Pilih Jadwal
                                         </button>
                                     </div>
                                 </div>
                             </div>
+                            )}
                         </div>
 
                         {/* Navigation Tabs (below image/card) */}

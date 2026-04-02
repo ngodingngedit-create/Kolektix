@@ -270,8 +270,15 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/router";
 import { Get } from "@/utils/REST";
+import { Icon } from "@iconify/react";
+
+const SortOptions = ['Rekomendasi', 'Harga Terendah', 'Harga Tertinggi'];
+
+const LocationOptions = ['Semua', 'Jakarta', 'Bandung', 'Surabaya', 'Yogyakarta', 'Bali'];
+const SportOptions = ['Semua', 'Futsal', 'Basket', 'Bulu Tangkis', 'Tenis', 'Gym', 'Renang'];
+const PriceOptions = ['Semua', '< 1 Juta', '1 - 5 Juta', '> 5 Juta'];
 
 const pages = [
   { name: "Event", path: "/event" },
@@ -280,7 +287,7 @@ const pages = [
 
 const FilterMenu = () => {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = router.pathname;
 
   const [query, setQuery] = useState("");
   const [showSuggest, setShowSuggest] = useState(false);
@@ -288,6 +295,36 @@ const FilterMenu = () => {
   const [merchandise, setMerchandise] = useState<any[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [loadingMerch, setLoadingMerch] = useState(false);
+
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [showCustomPrice, setShowCustomPrice] = useState(false);
+
+  const [pendingCities, setPendingCities] = useState<string[]>(['Semua']);
+  const [pendingSports, setPendingSports] = useState<string[]>(['Semua']);
+  const [pendingPrice, setPendingPrice] = useState<string>('Semua');
+
+  // Sync pending states from URL when filters are shown
+  useEffect(() => {
+    if (router.query.show_filters === 'true') {
+      const cities = router.query.city ? (router.query.city as string).split(',') : ['Semua'];
+      const sports = router.query.sport ? (router.query.sport as string).split(',') : ['Semua'];
+      const price = (router.query.price as string) || 'Semua';
+
+      setPendingCities(cities);
+      setPendingSports(sports);
+      setPendingPrice(price);
+
+      if (router.query.min_price) setMinPrice(router.query.min_price as string);
+      else setMinPrice("");
+
+      if (router.query.max_price) setMaxPrice(router.query.max_price as string);
+      else setMaxPrice("");
+
+      if (price === 'Custom') setShowCustomPrice(true);
+      else setShowCustomPrice(false);
+    }
+  }, [router.query.show_filters, router.query.city, router.query.sport, router.query.price, router.query.min_price, router.query.max_price]);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -301,6 +338,7 @@ const FilterMenu = () => {
     if (p === "/") return "Cari Event...";
     if (p.startsWith("/event")) return "Cari Event...";
     if (p.startsWith("/merchandise")) return "Cari Merchandise...";
+    if (p.startsWith("/venue")) return "Cari Venue...";
     return "Cari sesuatu...";
   }, [pathname]);
 
@@ -330,13 +368,13 @@ const FilterMenu = () => {
   // 3) fetch SEMUA merchandise data dengan looping semua pages
   const fetchAllMerchandise = useCallback(async () => {
     if (merchandise.length > 0 || loadingMerch) return;
-    
+
     setLoadingMerch(true);
     try {
       let allProducts: any[] = [];
       let currentPage = 1;
       let totalPages = 1;
-      
+
       while (currentPage <= totalPages) {
         try {
           const res = (await Get("product", {
@@ -347,7 +385,7 @@ const FilterMenu = () => {
           let pageData: any[] = [];
           let pageTotal = 0;
           let pageLastPage = 1;
-          
+
           if (Array.isArray(res)) {
             pageData = res;
           } else if (Array.isArray(res.data)) {
@@ -402,7 +440,7 @@ const FilterMenu = () => {
 
     } catch (err) {
       console.error("Error in main fetch process:", err);
-      
+
       try {
         const fallbackRes = (await Get("product", {
           limit: 1000,
@@ -410,7 +448,7 @@ const FilterMenu = () => {
         })) as any;
 
         let fallbackData: any[] = [];
-        
+
         if (Array.isArray(fallbackRes)) {
           fallbackData = fallbackRes;
         } else if (Array.isArray(fallbackRes.data)) {
@@ -432,7 +470,7 @@ const FilterMenu = () => {
         }));
 
         setMerchandise(normalized);
-        
+
       } catch (fallbackErr) {
         console.error("Fallback also failed:", fallbackErr);
         setMerchandise([]);
@@ -456,7 +494,7 @@ const FilterMenu = () => {
   const merchandiseMatches = useMemo(() => {
     if (!query || !pathname?.toLowerCase().startsWith("/merchandise")) return [];
     const q = query.toLowerCase().trim();
-    
+
     return merchandise.filter((m) => {
       const productName = m.name?.toLowerCase() || "";
       return productName.includes(q);
@@ -472,7 +510,7 @@ const FilterMenu = () => {
   // 5) final suggestion list sesuai halaman
   const suggestions = useMemo(() => {
     const isMerchandisePage = pathname?.toLowerCase().startsWith("/merchandise");
-    
+
     if (isMerchandisePage) {
       return [
         ...merchandiseMatches.slice(0, 10),
@@ -567,10 +605,10 @@ const FilterMenu = () => {
     const isMerchandisePage = pathname?.toLowerCase().startsWith("/merchandise");
 
     if (isMerchandisePage) {
-      const exactMerch = merchandise.find((m) => 
+      const exactMerch = merchandise.find((m) =>
         m.name.toLowerCase() === q.toLowerCase()
       );
-      
+
       if (exactMerch) {
         router.push(`/merchandise/${encodeURIComponent(exactMerch.slug)}`);
         setShowSuggest(false);
@@ -585,20 +623,20 @@ const FilterMenu = () => {
 
       router.push(`/merchandise?search=${encodeURIComponent(q)}`);
     } else {
-      const exactEvent = events.find((ev) => 
+      const exactEvent = events.find((ev) =>
         ev.name.toLowerCase() === q.toLowerCase()
       );
-      
+
       if (exactEvent) {
         router.push(`/event/${encodeURIComponent(exactEvent.slug)}`);
         setShowSuggest(false);
         return;
       }
 
-      const exactPage = pages.find((p) => 
+      const exactPage = pages.find((p) =>
         p.name.toLowerCase() === q.toLowerCase()
       );
-      
+
       if (exactPage) {
         router.push(exactPage.path);
         setShowSuggest(false);
@@ -618,15 +656,16 @@ const FilterMenu = () => {
   };
 
   return (
-    <div className="fixed w-full bg-gradient-to-b from-primary-dark to-primary-darker drop-shadow-2xl z-50">
-      <div className="flex justify-center items-center py-2 md:py-3 px-3 md:px-4">
-        <div ref={containerRef} className="bg-[#02255A] rounded-full w-full max-w-screen-lg px-3 md:px-4 py-1.5 md:py-2 flex items-center gap-2 md:gap-3 relative">
+    <div className="fixed w-full bg-gradient-to-b from-primary-dark to-primary-darker drop-shadow-2xl z-[100]">
+      <div className="max-w-screen-lg mx-auto w-full px-3 md:px-4 py-3 md:py-4 flex flex-col items-center gap-3">
+        {/* Search Bar Container */}
+        <div ref={containerRef} className="bg-[#02255A] rounded-full w-full px-3 md:px-4 py-1.5 md:py-2 flex items-center gap-2 md:gap-3 relative shadow-xl border border-white/5">
           {/* Search form */}
           <form onSubmit={handleSubmit} className="flex-1 relative">
-            <div className="flex items-center gap-2 bg-primary-base/20 rounded-full px-3 md:px-4 py-1.5 md:py-2 flex-1">
-              <FontAwesomeIcon 
-                icon={faSearch} 
-                className="text-white opacity-80 text-sm md:text-base" 
+            <div className="flex items-center gap-2 bg-primary-base/20 rounded-full px-3 md:px-4 py-2 flex-1 border border-white/5">
+              <FontAwesomeIcon
+                icon={faSearch}
+                className="text-white opacity-80 text-sm md:text-base"
               />
               <input
                 id="search-filter-input"
@@ -647,8 +686,8 @@ const FilterMenu = () => {
                 }}
                 onKeyDown={handleKeyDown}
                 aria-label="Search"
-                className="bg-primary-800 outline-none text-white placeholder-white/60 w-full rounded-full text-sm md:text-base"
-                style={{ fontSize: '16px' }}
+                className="!bg-transparent outline-none text-white placeholder-white/60 w-full rounded-full text-sm md:text-base"
+                style={{ fontSize: '16px', backgroundColor: 'transparent', color: 'white' }}
               />
             </div>
 
@@ -666,16 +705,16 @@ const FilterMenu = () => {
             {showSuggest && !loadingMerch && !loadingEvents && suggestions.length > 0 && (
               <>
                 {/* Backdrop for mobile */}
-                <div 
+                <div
                   className="fixed inset-0 bg-black/30 z-40 md:hidden"
                   onClick={() => {
                     setShowSuggest(false);
                     setActiveIndex(-1);
                   }}
                 />
-                
-                <ul 
-                  ref={listRef} 
+
+                <ul
+                  ref={listRef}
                   className="absolute z-50 mt-1 md:mt-2 w-full bg-white rounded-lg md:rounded-xl shadow-lg overflow-hidden max-h-[60vh] md:max-h-80 overflow-y-auto"
                   style={{
                     top: '100%',
@@ -721,7 +760,7 @@ const FilterMenu = () => {
                       </li>
                     );
                   })}
-                  
+
                   {/* Info jumlah data - mobile friendly */}
                   <li className="px-3 md:px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t">
                     <div className="flex justify-between items-center">
@@ -745,20 +784,20 @@ const FilterMenu = () => {
             {showSuggest && !loadingMerch && !loadingEvents && query.trim() && suggestions.length === 0 && (
               <>
                 {/* Backdrop for mobile */}
-                <div 
+                <div
                   className="fixed inset-0 bg-black/30 z-40 md:hidden"
                   onClick={() => {
                     setShowSuggest(false);
                     setActiveIndex(-1);
                   }}
                 />
-                
+
                 <div className="absolute z-50 mt-1 md:mt-2 w-full bg-white rounded-lg md:rounded-xl shadow-lg p-3 md:p-4 text-center text-gray-500">
                   <div className="mb-1 md:mb-2 text-sm md:text-base">Tidak ditemukan hasil untuk</div>
                   <div className="font-medium text-gray-700 mb-2 md:mb-3">&quot;{query}&quot;</div>
                   <div className="text-xs md:text-sm">
-                    {pathname?.toLowerCase().startsWith("/merchandise") 
-                      ? `Mencari di ${merchandise.length} produk` 
+                    {pathname?.toLowerCase().startsWith("/merchandise")
+                      ? `Mencari di ${merchandise.length} produk`
                       : `Mencari di ${events.length} event`}
                   </div>
                   <button
@@ -776,21 +815,250 @@ const FilterMenu = () => {
             )}
           </form>
 
+          {/* Filter Toggle Button - Integrated into bar (Desktop/Mobile) */}
+          {pathname?.toLowerCase().startsWith('/venue') && (
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const isShowing = router.query.show_filters === 'true';
+                  router.push({ pathname: router.pathname, query: { ...router.query, show_filters: !isShowing } }, undefined, { scroll: false });
+                }}
+                className={`flex items-center justify-center gap-1.5 h-[36px] md:h-[40px] px-4 md:px-5 rounded-full font-bold transition-all text-[11px] md:text-[12px] border
+                  ${router.query.show_filters === 'true'
+                    ? 'bg-white text-primary-dark border-white shadow-lg'
+                    : 'bg-white/10 text-white/90 border-white/10 hover:bg-white/20'
+                  }`}
+              >
+                <Icon icon={router.query.show_filters === 'true' ? "solar:close-circle-bold" : "solar:filter-bold-duotone"} className="text-[14px] md:text-[16px]" />
+                <span>{router.query.show_filters === 'true' ? 'Tutup' : 'Filter'}</span>
+              </button>
+            </div>
+          )}
+
           {/* Search button */}
           <div className="flex-shrink-0">
-            <button 
-              onClick={() => handleSubmit()} 
-              type="button" 
-              className="bg-primary-base rounded-full w-12 h-12 md:w-16 md:h-16 flex items-center justify-center hover:bg-primary-dark transition-colors shadow-md active:scale-95 transition-transform"
+            <button
+              onClick={() => handleSubmit()}
+              type="button"
+              className="bg-primary-base rounded-full w-12 h-12 md:w-14 md:h-14 flex items-center justify-center hover:bg-primary-dark transition-all shadow-lg active:scale-95 border border-white/10"
               aria-label="Search"
             >
-              <FontAwesomeIcon 
-                icon={faSearch} 
-                className="text-white text-sm md:text-lg" 
+              <FontAwesomeIcon
+                icon={faSearch}
+                className="text-white text-sm md:text-lg"
               />
             </button>
           </div>
         </div>
+
+        {/* Advanced Filter Panel - Below Search Bar */}
+        {pathname?.toLowerCase().startsWith('/venue') && router.query.show_filters === 'true' && (
+          <div className="w-full animate-in slide-in-from-top-4 fade-in duration-500 ease-out z-40">
+            <div className="bg-[#02255A]/95 backdrop-blur-xl rounded-[24px] md:rounded-[32px] p-4 md:p-8 border border-white/10 shadow-[0_30px_100px_-20px_rgba(0,0,0,0.5)] max-h-[75vh] md:max-h-none overflow-y-auto scrollbar-hide">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-8">
+                {/* Kota Filter */}
+                <div className="flex flex-col gap-3 md:gap-4">
+                  <span className="text-[10px] md:text-[11px] font-black text-white tracking-widest uppercase flex items-center gap-1.5 ml-1 opacity-80">
+                    <Icon icon="solar:map-point-bold-duotone" className="text-[14px] md:text-[16px]" /> Kota
+                  </span>
+                  <div className="flex overflow-x-auto pb-1.5 md:pb-0 md:flex-wrap gap-2 scrollbar-none md:scrollbar-default">
+                    <style jsx>{`
+                      .scrollbar-none::-webkit-scrollbar { display: none; }
+                      .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+                    `}</style>
+                    {LocationOptions.map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => {
+                          if (opt === 'Semua') {
+                            setPendingCities(['Semua']);
+                          } else {
+                            setPendingCities(prev => {
+                              const filtered = prev.filter(c => c !== 'Semua');
+                              if (filtered.includes(opt)) {
+                                const next = filtered.filter(c => c !== opt);
+                                return next.length === 0 ? ['Semua'] : next;
+                              } else {
+                                return [...filtered, opt];
+                              }
+                            });
+                          }
+                        }}
+                        className={`px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-[10px] md:text-[11px] font-bold transition-all shrink-0 md:shrink
+                          ${pendingCities.includes(opt)
+                            ? 'bg-primary-base text-white shadow-lg shadow-primary-base/20 border border-white/10'
+                            : 'bg-white/5 text-white/40 hover:bg-white/10'
+                          }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Olahraga Filter */}
+                <div className="flex flex-col gap-3 md:gap-4">
+                  <span className="text-[10px] md:text-[11px] font-black text-white tracking-widest uppercase flex items-center gap-1.5 ml-1 opacity-80">
+                    <Icon icon="solar:basketball-bold-duotone" className="text-[14px] md:text-[16px]" /> Olahraga
+                  </span>
+                  <div className="flex overflow-x-auto pb-1.5 md:pb-0 md:flex-wrap gap-2 scrollbar-none md:scrollbar-default">
+                    {SportOptions.map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => {
+                          if (opt === 'Semua') {
+                            setPendingSports(['Semua']);
+                          } else {
+                            setPendingSports(prev => {
+                              const filtered = prev.filter(s => s !== 'Semua');
+                              if (filtered.includes(opt)) {
+                                const next = filtered.filter(s => s !== opt);
+                                return next.length === 0 ? ['Semua'] : next;
+                              } else {
+                                return [...filtered, opt];
+                              }
+                            });
+                          }
+                        }}
+                        className={`px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-[10px] md:text-[11px] font-bold transition-all shrink-0 md:shrink
+                          ${pendingSports.includes(opt)
+                            ? 'bg-primary-base text-white shadow-lg shadow-primary-base/20 border border-white/10'
+                            : 'bg-white/5 text-white/40 hover:bg-white/10'
+                          }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Harga Filter */}
+                <div className="flex flex-col gap-3 md:gap-4">
+                  <span className="text-[10px] md:text-[11px] font-black text-white tracking-widest uppercase flex items-center gap-1.5 ml-1 opacity-80">
+                    <Icon icon="solar:wallet-bold-duotone" className="text-[14px] md:text-[16px]" /> Rentang Harga
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {PriceOptions.map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => {
+                          setShowCustomPrice(false);
+                          setPendingPrice(opt);
+                        }}
+                        className={`px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-[10px] md:text-[11px] font-bold transition-all
+                          ${pendingPrice === opt && !showCustomPrice
+                            ? 'bg-primary-base text-white shadow-lg shadow-primary-base/20 border border-white/10'
+                            : 'bg-white/5 text-white/40 hover:bg-white/10'
+                          }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => {
+                        setShowCustomPrice(!showCustomPrice);
+                        if (!showCustomPrice) setPendingPrice('Custom');
+                      }}
+                      className={`px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-[10px] md:text-[11px] font-bold transition-all
+                        ${showCustomPrice
+                          ? 'bg-primary-base text-white shadow-lg shadow-primary-base/20 border border-white/10'
+                          : 'bg-white/5 text-white/40 hover:bg-white/10'
+                        }`}
+                    >
+                      Kustom
+                    </button>
+                  </div>
+
+                  {showCustomPrice && (
+                    <div className="flex flex-col gap-2 mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          placeholder="Min (Rp)"
+                          value={minPrice}
+                          onChange={(e) => setMinPrice(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-white outline-none focus:border-primary-base transition-all"
+                        />
+                        <span className="text-white/20 text-[11px]">-</span>
+                        <input
+                          type="number"
+                          placeholder="Max (Rp)"
+                          value={maxPrice}
+                          onChange={(e) => setMaxPrice(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[11px] text-white outline-none focus:border-primary-base transition-all"
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          setPendingPrice('Custom');
+                          // On Apply, use these min/max - no immediate push anymore
+                        }}
+                        className="w-full bg-primary-base/20 text-white text-[11px] font-bold py-2 rounded-lg hover:bg-white/10 transition-all mt-1 border border-white/10"
+                      >
+                        Set Harga Kustom
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Section */}
+              <div className="mt-5 pt-4 md:mt-6 md:pt-6 border-t border-white/10 flex items-center justify-end gap-2 md:gap-3">
+                <button
+                  onClick={() => {
+                    const newQuery = { ...router.query };
+                    
+                    if (pendingCities.length > 0 && !pendingCities.includes('Semua')) {
+                      newQuery.city = pendingCities.join(',');
+                    } else {
+                      delete newQuery.city;
+                    }
+
+                    if (pendingSports.length > 0 && !pendingSports.includes('Semua')) {
+                      newQuery.sport = pendingSports.join(',');
+                    } else {
+                      delete newQuery.sport;
+                    }
+
+                    if (pendingPrice === 'Custom') {
+                      newQuery.price = 'Custom';
+                      if (minPrice) newQuery.min_price = minPrice;
+                      else delete newQuery.min_price;
+                      if (maxPrice) newQuery.max_price = maxPrice;
+                      else delete newQuery.max_price;
+                    } else if (pendingPrice !== 'Semua') {
+                      newQuery.price = pendingPrice;
+                      delete newQuery.min_price;
+                      delete newQuery.max_price;
+                    } else {
+                      delete newQuery.price;
+                      delete newQuery.min_price;
+                      delete newQuery.max_price;
+                    }
+
+                    router.push({ pathname: router.pathname, query: newQuery }, undefined, { scroll: false });
+                  }}
+                  className="flex-1 md:flex-none px-4 md:px-6 py-2 md:py-2.5 rounded-full bg-white text-primary-dark text-[10px] md:text-[11px] font-black uppercase tracking-wider hover:bg-primary-light-100 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-1.5 md:gap-2"
+                >
+                  <Icon icon="solar:check-read-bold" className="text-[14px] md:text-[16px]" /> Terapkan
+                </button>
+
+                <button
+                  onClick={() => {
+                    const { city, sport, price, min_price, max_price, sort, ...rest } = router.query;
+                    router.push({ pathname: router.pathname, query: rest }, undefined, { scroll: false });
+                  }}
+                  className="flex-1 md:flex-none px-4 md:px-6 py-2 md:py-2.5 rounded-full border border-red-500 text-[10px] md:text-[11px] font-bold text-red-500 hover:bg-red-500/10 transition-all flex items-center justify-center gap-1.5 md:gap-2"
+                >
+                  <Icon icon="solar:trash-bin-trash-bold" className="text-[14px] md:text-[16px]" /> Reset Semua
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Venue Controls for Mobile/Tablet - Removed (Unified into Panel) */}
       </div>
     </div>
   );

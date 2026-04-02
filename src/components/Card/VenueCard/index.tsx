@@ -119,26 +119,26 @@ const VenueCard = ({ id, bookmark_id, slug, title, image, location, price, categ
   else if (category === 'Convention Hall' || category === 'Hall') iconFasilitas = "solar:buildings-bold-duotone";
 
   return (
-    <div className="group relative flex flex-col bg-white rounded-[32px] overflow-hidden shadow-[0_4px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] hover:-translate-y-1.5 transition-all duration-500 h-full">
+    <div className="group relative flex flex-col bg-white rounded-md md:rounded-[32px] overflow-hidden shadow-[0_4px_25px_rgba(0,0,0,0.03)] hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-500 h-full">
       {/* Invisible link overlay for the whole card */}
       <Link href={`/venue/${slug}`} className="absolute inset-0 z-10" />
 
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-50">
+      <div className="relative aspect-[4/5] md:aspect-[4/3] w-full overflow-hidden bg-slate-50">
         <Image
           src={image?.[0] || notFoundImage.src}
           alt={title}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
 
-        {/* Top-left category tag (Premium Light) */}
+        {/* Top-left category tag (Desktop ONLY - Moved for mobile) */}
         {category && (
-          <div className="absolute top-4 left-4 z-20 px-3 py-1.5 bg-white/95 backdrop-blur-sm text-primary-base text-[10px] font-extrabold uppercase tracking-widest rounded-full shadow-md">
+          <div className="absolute top-4 left-4 z-20 px-3 py-1.5 bg-white/95 backdrop-blur-sm text-primary-base text-[10px] font-extrabold uppercase tracking-widest rounded-full shadow-md hidden md:block">
             {category}
           </div>
         )}
 
-        {/* Bottom-left Location tag inside Image */}
-        <div className="absolute bottom-4 left-4 z-20 px-3 py-1.5 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold rounded-full flex items-center gap-1.5 shadow-xl">
+        {/* Bottom-left Location tag inside Image (Desktop ONLY) */}
+        <div className="absolute bottom-4 left-4 z-20 px-3 py-1.5 bg-black/60 backdrop-blur-md text-white text-[11px] font-bold rounded-full items-center gap-1.5 shadow-xl hidden md:flex">
             <Icon icon="solar:map-point-bold" className="text-white text-[14px]" />
             <span className="mb-[1px]">{shortCity}</span>
         </div>
@@ -151,27 +151,38 @@ const VenueCard = ({ id, bookmark_id, slug, title, image, location, price, categ
             toggleBookmark();
           }}
           disabled={loading.includes('setbookmark')}
-          className="absolute top-4 right-4 z-30 w-[38px] h-[38px] flex items-center justify-center rounded-full bg-white/95 backdrop-blur-sm shadow-xl text-gray-400 hover:text-red-500 hover:scale-110 transition-all disabled:opacity-50"
+          className="absolute top-3 right-3 md:top-4 md:right-4 z-30 w-[30px] h-[30px] md:w-[38px] md:h-[38px] flex items-center justify-center rounded-full bg-white/95 backdrop-blur-sm shadow-xl text-gray-400 hover:text-red-500 hover:scale-110 transition-all disabled:opacity-50"
         >
-          <Icon icon={bookmark ? "famicons:bookmark" : "famicons:bookmark-outline"} className="text-[20px] transition-colors" />
+          <Icon icon={bookmark ? "famicons:bookmark" : "famicons:bookmark-outline"} className="text-[16px] md:text-[20px] transition-colors" />
         </button>
       </div>
 
-      <div className="flex flex-col p-6 flex-1 relative z-20 pointer-events-none">
+      <div className="flex flex-col p-2.5 md:p-6 flex-1 relative z-20 pointer-events-none">
+        {/* Mobile Category & Rating Row */}
+        <div className="flex items-center justify-between gap-1 mb-1 md:hidden">
+          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 rounded-md text-[8px] font-extrabold text-primary-base uppercase tracking-tight">
+            {category || 'Venue'}
+          </div>
+          <div className="flex items-center gap-1 text-gray-800">
+            <Icon icon="solar:star-fall-bold" className="text-yellow-400 text-[10px]" />
+            <span className="text-[9px] font-black">4.8</span>
+          </div>
+        </div>
+
         {/* Rating & Title */}
-        <div className="mb-4">
-          <div className="flex items-center gap-1.5 mb-2.5">
+        <div className="mb-1 md:mb-4">
+          <div className="hidden md:flex items-center gap-1.5 mb-2.5">
             <Icon icon="solar:star-fall-bold" className="text-yellow-400 text-[14px] drop-shadow-sm" />
             <span className="text-[12px] font-bold text-gray-800 tracking-wide">4.8</span>
-            <span className="text-[11px] font-medium text-gray-400 tracking-tight">(120 ulasan)</span>
+            <span className="text-[11px] font-medium text-gray-400 tracking-tight">(120)</span>
           </div>
-          <h3 className="font-black text-gray-900 text-[19px] leading-tight group-hover:text-primary-base transition-colors line-clamp-2 tracking-tight">
+          <h3 className="font-black text-gray-900 text-[12.5px] md:text-[19px] leading-snug md:leading-tight group-hover:text-primary-base transition-colors line-clamp-2 title-tight">
             {title}
           </h3>
         </div>
 
-        {/* Details Row */}
-        <div className="flex flex-col gap-2.5 mb-6">
+        {/* Details Row (HIDDEN ON MOBILE for clean focus) */}
+        <div className="hidden md:flex flex-col gap-2.5 mb-6">
             <div className="flex items-center gap-3 text-[13px] font-bold text-gray-500">
                 <Icon icon={iconFasilitas} className="text-primary-base/60 text-[20px] shrink-0" />
                 <span className="line-clamp-1">{fasilitasText}</span>
@@ -183,25 +194,15 @@ const VenueCard = ({ id, bookmark_id, slug, title, image, location, price, categ
         </div>
 
         {/* Footer Pricing & Button (BORDERLESS DIVIDER) */}
-        <div className="mt-auto bg-slate-50/50 -mx-6 -mb-6 px-6 py-5 flex items-center justify-between gap-2">
-          <div className="flex flex-col min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-0.5 opacity-80">Mulai dari</p>
-            <p className="font-extrabold text-[18px] md:text-[20px] text-gray-900 leading-none truncate flex items-start">
-              {price >= 10000000 ? (
-                <>
-                  Rp{(price / 1000).toLocaleString('id')}
-                  <span className="ml-1 mt-[2px] text-[8px] md:text-[9px] font-black tracking-widest uppercase bg-green-50 text-green-600 px-1.5 py-[2px] rounded-md border border-green-200/50 shadow-sm leading-none flex items-center gap-0.5">
-                    <Icon icon="solar:wallet-bold-duotone" className="text-[10px] hidden md:block" /> Million
-                  </span>
-                </>
-              ) : (
-                <NumberFormatter value={price} prefix="Rp" thousandSeparator="." decimalSeparator="," />
-              )}
+        <div className="mt-1.5 md:mt-auto bg-slate-50/50 -mx-2.5 -mb-2.5 md:-mx-6 md:-mb-6 px-2.5 py-2.5 md:px-6 md:py-5 flex items-center justify-between gap-1.5 md:gap-2">
+          <div className="flex flex-col min-w-[0] overflow-hidden">
+            <p className="text-[7px] font-black uppercase tracking-widest text-gray-400 mb-0.5 opacity-80 md:text-[10px]">Mulai dari</p>
+            <p className={`font-extrabold text-gray-900 leading-none truncate ${price >= 1000000 ? 'text-[11.5px] md:text-[16.5px]' : 'text-[12px] md:text-[20px]'}`}>
+              <NumberFormatter value={price} prefix="Rp" thousandSeparator="." decimalSeparator="," />
             </p>
           </div>
-
-          <button className="bg-primary-base text-white px-5 py-3 rounded-xl text-[12px] font-black shadow-lg shadow-primary-base/20 hover:scale-105 active:scale-95 transition-all whitespace-nowrap shrink-0 flex items-center gap-2">
-             Booking <Icon icon="solar:arrow-right-line-duotone" className="text-[16px]" />
+          <button className="hidden bg-primary-base text-white px-2 py-1.5 rounded-[8px] text-[9px] font-black shadow-lg shadow-primary-base/20 transition-all hover:scale-105 active:scale-95 whitespace-nowrap shrink-0 items-center gap-1 md:flex md:px-5 md:py-3 md:rounded-xl md:text-[12px]">
+             Booking <Icon icon="solar:arrow-right-line-duotone" className="text-[11px] md:text-[16px]" />
           </button>
         </div>
       </div>

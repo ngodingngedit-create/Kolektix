@@ -281,13 +281,12 @@ const PilihJadwal = () => {
     };
 
     const handleOrder = () => {
-        if (data?.id) {
+        if (data?.id && selectedSlots.length > 0) {
             Cookies.set('venue_order_data', JSON.stringify({
                 id: data?.id,
                 slug: data?.slug,
-                date_start: date.start,
-                date_end: date.end
-            } as VenueBookingOrder));
+                selected_slots: selectedSlots
+            }));
             setLoading.append('submit');
             router.push('/venue-order');
         }
@@ -471,12 +470,6 @@ const PilihJadwal = () => {
                                         >
                                             {/* <Icon icon="solar:chat-round-dots-bold" className="text-[18px]" /> */}
                                             Chat Host
-                                        </button>
-                                        <button
-                                            onClick={() => router.push(`/venue/${slug}/pilih-jadwal`)}
-                                            className="w-full py-3 rounded-xl font-black text-[12px] uppercase tracking-widest bg-[#194e9e] text-white shadow-xl shadow-[#194e9e]/30 hover:bg-[#123e80] active:scale-[0.98] transition-all text-center"
-                                        >
-                                            Pilih Jadwal
                                         </button>
                                     </div>
                                 </div>
@@ -913,19 +906,12 @@ const PilihJadwal = () => {
                             >
                                 Detail
                             </button>
-                            <button
-                                onClick={() => setModalBooking(true)}
-                                className="hidden sm:flex items-center gap-2 px-6 h-[48px] rounded-xl font-black text-[13px] uppercase tracking-wider text-primary-base bg-primary-light-100/50 hover:bg-primary-light-100 transition-all"
-                            >
-                                <Icon icon="solar:document-text-bold" className="text-lg" />
-                                Review
-                            </button>
                         </>
                     )}
                     <button
                         disabled={selectedSlots.length === 0}
                         onClick={() => {
-                            if (selectedSlots.length > 0) setModalBooking(true);
+                            if (selectedSlots.length > 0) handleOrder();
                             else sectionRefs.lapangan.current?.scrollIntoView({ behavior: 'smooth' });
                         }}
                         className={`h-[44px] sm:h-[48px] px-5 sm:px-8 rounded-[14px] sm:rounded-xl font-black text-[12px] sm:text-[13px] uppercase tracking-widest transition-all shrink-0 ${selectedSlots.length > 0
@@ -1040,7 +1026,7 @@ const PilihJadwal = () => {
                         <button
                             onClick={() => {
                                 setShowMobileDetail(false);
-                                setModalBooking(true);
+                                handleOrder();
                             }}
                             className="w-full py-4 rounded-[18px] bg-[#194e9e] text-white font-black text-[14px] uppercase tracking-widest shadow-xl shadow-[#194e9e]/30 active:scale-[0.98] transition-all"
                         >
@@ -1050,38 +1036,7 @@ const PilihJadwal = () => {
                 </div>
             </Drawer>
 
-            {/* Booking Modal */}
-            <Modal opened={modalBooking} onClose={() => setModalBooking(false)} title="Pilih Tanggal Booking" centered radius="lg">
-                <Stack gap={15}>
-                    <DatePickerInput
-                        type="range"
-                        label="Tanggal Sewa"
-                        placeholder="Pilih Tanggal Booking Berupa Kalender"
-                        value={[date.start ? new Date(date.start) : null, date.end ? new Date(date.end) : null]}
-                        onChange={(val) => setDate({
-                            start: val[0] ? moment(val[0]).format('YYYY-MM-DD') : '',
-                            end: val[1] ? moment(val[1]).format('YYYY-MM-DD') : ''
-                        })}
-                        minDate={new Date()}
-                        valueFormat="DD MMMM YYYY"
-                        w="100%"
-                        size="md"
-                        leftSection={<Icon icon="solar:calendar-bold" className="text-gray-500 text-lg" />}
-                    />
-                    <ButtonM
-                        loading={loading.includes('submit')}
-                        disabled={!date.start || !date.end}
-                        onClick={handleOrder}
-                        color="#194e9e"
-                        radius="xl"
-                        fullWidth
-                        size="lg"
-                        className="!font-extrabold"
-                    >
-                        Booking Sekarang
-                    </ButtonM>
-                </Stack>
-            </Modal>
+            {/* Booking Modal removed */}
 
             {/* ── GALLERY LIGHTBOX ── fullscreen overlay, no card border ── */}
             {showGallery && (

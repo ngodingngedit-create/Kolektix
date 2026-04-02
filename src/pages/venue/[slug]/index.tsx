@@ -98,6 +98,17 @@ const VenueDetail = () => {
     const [filterSport, setFilterSport] = useState<string[]>([]);
     const calendarRef = React.useRef<HTMLDivElement>(null);
     const filterRef = React.useRef<HTMLDivElement>(null);
+    const [isMobile, setIsMobile] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    // Detect mobile on mount and resize
+    useEffect(() => {
+        setMounted(true);
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Court/Schedule state
     const [selectedDate, setSelectedDate] = useState<Date>(dateStrip[0]);
@@ -297,9 +308,9 @@ const VenueDetail = () => {
                 </div>
 
                 {/* ── HERO SECTION: Dark Blue Container ── */}
-                <div className="bg-[#194e9e] text-white pt-[60px] md:pt-[70px] pb-5 md:pb-7">
-                    <div className="max-w-6xl mx-auto px-3 md:px-0">
-                        {/* Header Info: Category + Title */}
+                <div className="bg-[#194e9e] text-white pt-[60px] md:pt-[70px] pb-0 md:pb-5">
+                    <div className="max-w-6xl mx-auto px-4 md:px-0">
+                        {/* Header Info: Category + Title – Desktop only */}
                         <div className="hidden md:flex flex-col md:flex-row md:items-end justify-between mb-4 md:mb-6 gap-3">
                             <div className="flex flex-col">
                                 <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">Venue Olahraga</span>
@@ -312,8 +323,8 @@ const VenueDetail = () => {
                         {/* Main Grid: Image (Left) + Details Card (Right) */}
                         <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-stretch">
                             {/* LEFT – Photo Collage */}
-                            <div className="relative group rounded-[24px] overflow-hidden shadow-2xl flex-[2.2] border border-white/10 bg-white/5 h-[200px] md:h-[320px]">
-                                <div className="flex gap-1 h-[200px] md:h-[320px]">
+                            <div className="relative group rounded-[20px] md:rounded-[24px] overflow-hidden shadow-2xl flex-[2.2] border border-white/10 bg-white/5" style={{ height: 'clamp(220px, 55vw, 320px)' }}>
+                                <div className="flex gap-1 w-full h-full">
                                     {/* Main large image */}
                                     <div className="relative flex-[1.6] overflow-hidden">
                                         <div className="absolute inset-0">
@@ -362,116 +373,130 @@ const VenueDetail = () => {
                                 {/* Floating see all photos button */}
                                 <button
                                     onClick={() => { setGalleryActiveIdx(0); setShowGallery(true); }}
-                                    className="absolute bottom-4 right-4 md:bottom-6 md:right-6 z-20 flex items-center gap-2 px-4 py-2.5 rounded-2xl hover:scale-105 transition-all"
+                                    className="absolute bottom-3 right-3 md:bottom-5 md:right-5 z-20 flex items-center gap-1.5 px-3 py-2 md:px-4 md:py-2.5 rounded-xl md:rounded-2xl hover:scale-105 transition-all"
                                     style={{ background: 'white', boxShadow: '0 8px 30px rgba(0,0,0,0.18)', outline: '1px solid #e2e8f0' }}
                                 >
-                                    <Icon icon="solar:gallery-minimalistic-bold" style={{ color: '#194e9e', fontSize: '16px' }} />
-                                    <span style={{ color: '#0f172a', fontSize: '12px', fontWeight: 900 }}>Lihat semua {galleryImages.length} foto</span>
+                                    <Icon icon="solar:gallery-minimalistic-bold" style={{ color: '#194e9e', fontSize: '14px' }} />
+                                    <span style={{ color: '#0f172a', fontSize: '11px', fontWeight: 900 }}>Lihat semua {galleryImages.length} foto</span>
                                 </button>
                             </div>
 
                             {/* MOBILE HERO DETAILS (Hidden on Desktop) */}
-                            <div className="flex flex-col md:hidden mt-2 gap-4 pb-2">
-                                <h1 className="text-[22px] font-black text-white leading-tight uppercase tracking-tight">
+                            <div className="flex flex-col md:hidden mt-3 gap-3 pb-4">
+                                {/* Category tag */}
+                                <span className="text-white/50 text-[10px] font-bold uppercase tracking-[0.2em]">Venue Olahraga</span>
+                                <h1 className="text-[20px] font-black text-white leading-tight uppercase tracking-tight -mt-1">
                                     {data?.name || 'Loading Venue...'}
                                 </h1>
 
-                                <div className="flex flex-col gap-3 mt-1">
-                                    <div className="flex items-center gap-3">
-                                        <Icon icon="solar:wallet-bold-duotone" className="text-white/60 text-[20px] shrink-0" />
-                                        <div className="flex items-baseline gap-1.5 flex-1 border-b border-white/10 pb-3">
-                                            <span className="text-[14px] font-bold text-white/70 uppercase tracking-wide">Mulai Dari</span>
-                                            <span className="text-[18px] font-black text-white pl-1">Rp{(data?.starting_price ?? 95000).toLocaleString('id')}</span>
-                                            <span className="text-[12px] font-medium text-white/50">/ sesi</span>
+                                {/* Price + Location row */}
+                                <div className="flex items-center gap-3 bg-white/10 rounded-2xl px-4 py-3 border border-white/15">
+                                    <div className="flex-1 flex flex-col">
+                                        <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Harga Mulai Dari</span>
+                                        <div className="flex items-baseline gap-1 mt-0.5">
+                                            <span className="text-[20px] font-black text-white leading-none">Rp{(data?.starting_price ?? 95000).toLocaleString('id')}</span>
+                                            <span className="text-[11px] font-medium text-white/50">/ sesi</span>
                                         </div>
                                     </div>
-
-                                    <div className="flex items-start gap-3">
-                                        <Icon icon="solar:map-point-bold-duotone" className="text-white/60 text-[20px] shrink-0 mt-0.5" />
-                                        <div className="flex-1">
-                                            <span className="text-[14px] font-medium text-white/90 leading-snug">{data?.location}</span>
-                                        </div>
-                                    </div>
+                                    <div className="w-px h-10 bg-white/20" />
+                                    <button
+                                        onClick={() => router.push(`/venue/${slug}/pilih-jadwal`)}
+                                        className="shrink-0 px-4 py-2 rounded-xl bg-white text-[#194e9e] text-[12px] font-black uppercase tracking-wider shadow-lg active:scale-95 transition-transform"
+                                    >
+                                        Pilih Jadwal
+                                    </button>
                                 </div>
 
-                                <div className="h-px border-t border-dashed border-white/20 w-full my-2"></div>
+                                {/* Location */}
+                                <div className="flex items-center gap-2">
+                                    <Icon icon="solar:map-point-bold-duotone" className="text-white/50 text-[16px] shrink-0" />
+                                    <span className="text-[13px] font-medium text-white/75 leading-snug line-clamp-1">{data?.location}</span>
+                                </div>
 
+                                {/* Divider */}
+                                <div className="h-px bg-white/15 w-full" />
+
+                                {/* Creator + Chat */}
                                 <div className="flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-11 h-11 rounded-full bg-white/10 border border-white/20 overflow-hidden shrink-0 flex items-center justify-center">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-9 h-9 rounded-full bg-white/10 border border-white/20 overflow-hidden shrink-0 flex items-center justify-center">
                                             {data?.creator?.image_url ? (
                                                 <ImageM src={data.creator.image_url} className="w-full h-full object-cover" />
                                             ) : (
-                                                <Icon icon="solar:user-bold" className="text-white/50 text-[20px]" />
+                                                <Icon icon="solar:user-bold" className="text-white/50 text-[18px]" />
                                             )}
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[11px] font-medium text-white/60">Diselenggarakan Oleh</span>
-                                            <span className="text-[14px] font-black text-white leading-tight mt-0.5">{data?.creator?.name}</span>
+                                            <span className="text-[10px] font-medium text-white/50">Diselenggarakan Oleh</span>
+                                            <div className="flex items-center gap-1 mt-0.5">
+                                                <span className="text-[13px] font-black text-white leading-tight">{data?.creator?.name}</span>
+                                                <Icon icon="solar:verified-check-bold" className="text-green-400 text-[13px]" />
+                                            </div>
                                         </div>
                                     </div>
-                                    <button onClick={() => setOpenChat(true)} className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center transition-colors">
-                                        <Icon icon="solar:chat-round-dots-bold" className="text-white text-[20px]" />
+                                    <button onClick={() => setOpenChat(true)} className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center transition-colors">
+                                        <Icon icon="solar:chat-round-dots-bold" className="text-white text-[18px]" />
                                     </button>
                                 </div>
                             </div>
 
-                            {/* RIGHT – Harga Mulai Dari + Kreator + Buttons */}
-                            <div className="hidden md:flex flex-1 shrink-0 flex-col gap-4">
-                                <div className="bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col border border-[#d1d1d1] h-full md:h-[320px]" style={{ color: '#0f172a' }}>
-                                    {/* HARGA WIDGET */}
-                                    <div className="bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] px-6 py-4 md:py-5 border-b border-[#d1d1d1] flex-1 flex flex-col justify-center">
-                                        <p style={{ color: '#64748b' }} className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">HARGA MULAI DARI</p>
-                                        <div className="flex items-baseline gap-1.5">
-                                            <span style={{ color: '#0f172a' }} className="text-[28px] md:text-[32px] font-black leading-none tracking-tighter">
-                                                Rp{(data?.starting_price ?? 95000).toLocaleString('id')}
-                                            </span>
-                                            <span style={{ color: '#64748b' }} className="text-[14px] font-bold">/ sesi</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Creator Section */}
-                                    <div className="px-6 py-3.5 flex flex-col gap-2.5 shrink-0" style={{ color: '#0f172a' }}>
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: '#64748b' }}>Penyelenggara</span>
-                                        <div className="flex items-center gap-3 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
-                                            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm bg-gray-200 shrink-0 flex items-center justify-center">
-                                                {data?.creator?.image_url ? (
-                                                    <img src={data.creator.image_url} alt={data.creator.name || ''} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <Icon icon="solar:user-bold" className="text-gray-400 text-[20px]" />
-                                                )}
-                                            </div>
-                                            <div className="flex flex-col min-w-0">
-                                                <span className="text-[13px] font-black tracking-tight truncate" style={{ color: '#0f172a' }}>{data?.creator?.name || 'Kreator'}</span>
-                                                <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5" style={{ color: '#16a34a' }}>
-                                                    <Icon icon="solar:verified-check-bold" /> Official
+                            {/* RIGHT – Harga Mulai Dari + Kreator + Buttons — DESKTOP ONLY */}
+                            {mounted && !isMobile && (
+                                <div className="flex-1 shrink-0 flex flex-col gap-4">
+                                    <div className="bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col border border-[#d1d1d1] h-full md:h-[320px]" style={{ color: '#0f172a' }}>
+                                        {/* HARGA WIDGET */}
+                                        <div className="bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] px-6 py-4 md:py-5 border-b border-[#d1d1d1] flex-1 flex flex-col justify-center">
+                                            <p style={{ color: '#64748b' }} className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">HARGA MULAI DARI</p>
+                                            <div className="flex items-baseline gap-1.5">
+                                                <span style={{ color: '#0f172a' }} className="text-[28px] md:text-[32px] font-black leading-none tracking-tighter">
+                                                    Rp{(data?.starting_price ?? 95000).toLocaleString('id')}
                                                 </span>
+                                                <span style={{ color: '#64748b' }} className="text-[14px] font-bold">/ sesi</span>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="px-6 pb-5 pt-1 flex flex-col gap-2.5 shrink-0">
-                                        <button
-                                            onClick={() => setOpenChat(true)}
-                                            className="w-full py-3 rounded-xl font-black text-[12px] uppercase tracking-widest text-[#194e9e] bg-blue-50/50 hover:bg-blue-50 border border-blue-100 hover:border-blue-200 transition-all text-center flex items-center justify-center gap-2"
-                                        >
-                                            {/* <Icon icon="solar:chat-round-dots-bold" className="text-[18px]" /> */}
-                                            Chat Host
-                                        </button>
-                                        <button
-                                            onClick={() => router.push(`/venue/${slug}/pilih-jadwal`)}
-                                            className="w-full py-3 rounded-xl font-black text-[12px] uppercase tracking-widest bg-[#194e9e] text-white shadow-xl shadow-[#194e9e]/30 hover:bg-[#123e80] active:scale-[0.98] transition-all text-center"
-                                        >
-                                            Pilih Jadwal
-                                        </button>
+                                        {/* Creator Section */}
+                                        <div className="px-6 py-3.5 flex flex-col gap-2.5 shrink-0" style={{ color: '#0f172a' }}>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: '#64748b' }}>Penyelenggara</span>
+                                            <div className="flex items-center gap-3 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
+                                                <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm bg-gray-200 shrink-0 flex items-center justify-center">
+                                                    {data?.creator?.image_url ? (
+                                                        <img src={data.creator.image_url} alt={data.creator.name || ''} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Icon icon="solar:user-bold" className="text-gray-400 text-[20px]" />
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-[13px] font-black tracking-tight truncate" style={{ color: '#0f172a' }}>{data?.creator?.name || 'Kreator'}</span>
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5" style={{ color: '#16a34a' }}>
+                                                        <Icon icon="solar:verified-check-bold" /> Official
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="px-6 pb-5 pt-1 flex flex-col gap-2.5 shrink-0">
+                                            <button
+                                                onClick={() => setOpenChat(true)}
+                                                className="w-full py-3 rounded-xl font-black text-[12px] uppercase tracking-widest text-[#194e9e] bg-blue-50/50 hover:bg-blue-50 border border-blue-100 hover:border-blue-200 transition-all text-center flex items-center justify-center gap-2"
+                                            >
+                                                Chat Host
+                                            </button>
+                                            <button
+                                                onClick={() => router.push(`/venue/${slug}/pilih-jadwal`)}
+                                                className="w-full py-3 rounded-xl font-black text-[12px] uppercase tracking-widest bg-[#194e9e] text-white shadow-xl shadow-[#194e9e]/30 hover:bg-[#123e80] active:scale-[0.98] transition-all text-center"
+                                            >
+                                                Pilih Jadwal
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         {/* Navigation Tabs */}
-                        <div className="mt-10 md:mt-24 border-b border-white/10">
-                            <div className="flex items-center gap-3 md:gap-8 overflow-x-auto scrollbar-hide">
+                        <div className="mt-4 md:mt-20 border-b border-white/10">
+                            <div className="flex items-center gap-1 md:gap-8 overflow-x-auto scrollbar-hide">
                                 {[
                                     { id: 'info', label: 'Deskripsi' },
                                     { id: 'ulasan', label: 'Ulasan' },
@@ -489,7 +514,7 @@ const VenueDetail = () => {
                                             const ref = sectionRefs[tab.id as keyof typeof sectionRefs];
                                             ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                         }}
-                                        className={`pb-4 text-[13px] md:text-[14px] font-black uppercase tracking-widest transition-all relative whitespace-nowrap shrink-0 ${activeSection === tab.id
+                                        className={`pb-3 md:pb-4 px-2 md:px-0 text-[11px] md:text-[14px] font-black uppercase tracking-widest transition-all relative whitespace-nowrap shrink-0 ${activeSection === tab.id
                                             ? 'text-white'
                                             : 'text-white/40 hover:text-white/70'
                                             }`}
@@ -542,15 +567,15 @@ const VenueDetail = () => {
                 </div>
 
                 {/* ── MAIN CONTENT – Full Width ── */}
-                <div className="max-w-6xl mx-auto px-4 md:px-0 py-6">
-                    <div className="flex flex-col text-dark gap-6">
+                <div className="max-w-6xl mx-auto px-3 md:px-0 py-4 md:py-6">
+                    <div className="flex flex-col text-dark gap-4 md:gap-6">
                         {/* ── FULL WIDTH CONTENT ── */}
                         <div ref={sectionRefs.info} className="w-full flex flex-col gap-0">
 
                             {/* PROPERTY TITLE CARD */}
                             {/* PROPERTY TITLE CARD - REDESIGNED */}
-                            <div className="bg-white rounded-[32px] p-6 md:p-10 mb-6 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-[#d1d1d1] relative overflow-hidden">
-                                <h1 className="font-extrabold text-2xl md:text-3xl text-gray-900 capitalize leading-tight mb-3 tracking-tight">{data?.name}</h1>
+                            <div className="bg-white rounded-[24px] md:rounded-[32px] p-5 md:p-10 mb-4 md:mb-6 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.1)] border border-[#d1d1d1] relative overflow-hidden">
+                                <h1 className="font-extrabold text-xl md:text-3xl text-gray-900 capitalize leading-tight mb-3 tracking-tight">{data?.name}</h1>
 
                                 {/* Rating & Location Row */}
                                 <div className="flex flex-col gap-1.5 mb-6">
@@ -600,7 +625,7 @@ const VenueDetail = () => {
                                 {/* Facilities */}
                                 <div>
                                     <h6 className="text-[13px] font-black text-[#194e9e] uppercase tracking-[0.15em] mb-3">Fasilitas Venue</h6>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-y-3 gap-x-4">
                                         {(data?.facility || []).map((el, idx) => {
                                             const facilityIcons: Record<string, string> = {
                                                 'DP': 'solar:card-bold',
@@ -641,7 +666,7 @@ const VenueDetail = () => {
 
                             <div className="h-px bg-black/5 -mx-6 my-2"></div>
 
-                            <div ref={sectionRefs.ulasan} className="mt-8 bg-white rounded-[24px] p-6 md:p-8 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.08)] border border-[#e5e7eb]">
+                            <div ref={sectionRefs.ulasan} className="mt-4 md:mt-8 bg-white rounded-[24px] p-5 md:p-8 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.08)] border border-[#e5e7eb]">
                                 {/* Section header */}
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="flex items-center gap-3">
@@ -654,15 +679,15 @@ const VenueDetail = () => {
                                 </div>
 
                                 {/* Static rating summary */}
-                                <div className="flex flex-col md:flex-row gap-6 mb-6 pb-6 border-b border-gray-100">
-                                    <div className="flex flex-col items-center justify-center border border-gray-200 rounded-[16px] px-6 py-4 min-w-[160px]">
-                                        <span className="text-[48px] font-black text-gray-900 leading-none">4.9</span>
-                                        <div className="flex text-yellow-400 text-[16px] my-2 gap-0.5">
+                                <div className="flex flex-row gap-4 mb-5 pb-5 border-b border-gray-100">
+                                    <div className="flex flex-col items-center justify-center border border-gray-200 rounded-[16px] px-4 py-3 min-w-[100px] md:min-w-[160px] shrink-0">
+                                        <span className="text-[36px] md:text-[48px] font-black text-gray-900 leading-none">4.9</span>
+                                        <div className="flex text-yellow-400 text-[13px] md:text-[16px] my-1.5 gap-0.5">
                                             <Icon icon="solar:star-bold" /><Icon icon="solar:star-bold" /><Icon icon="solar:star-bold" /><Icon icon="solar:star-bold" /><Icon icon="solar:star-bold" />
                                         </div>
-                                        <span className="text-[11px] font-semibold text-gray-400">120+ ULASAN</span>
+                                        <span className="text-[10px] font-semibold text-gray-400">120+ Ulasan</span>
                                     </div>
-                                    <div className="flex-1 flex flex-col justify-center gap-2.5">
+                                    <div className="flex-1 flex flex-col justify-center gap-2">
                                         {[
                                             { star: 5, pct: '85%', w: '85%' },
                                             { star: 4, pct: '10%', w: '10%' },
@@ -670,12 +695,12 @@ const VenueDetail = () => {
                                             { star: 2, pct: '5%', w: '5%' },
                                             { star: 1, pct: '5%', w: '5%' },
                                         ].map(({ star, pct, w }) => (
-                                            <div key={star} className="flex items-center gap-3">
-                                                <span className="text-[12px] font-semibold text-gray-500 w-3 text-right">{star}</span>
-                                                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                            <div key={star} className="flex items-center gap-2">
+                                                <span className="text-[11px] font-semibold text-gray-500 w-2.5 text-right shrink-0">{star}</span>
+                                                <div className="flex-1 h-1.5 md:h-2 bg-gray-100 rounded-full overflow-hidden">
                                                     <div className="h-full bg-yellow-400 rounded-full" style={{ width: w }}></div>
                                                 </div>
-                                                <span className="text-[12px] font-semibold text-gray-400 w-8">{pct}</span>
+                                                <span className="text-[11px] font-semibold text-gray-400 w-6 shrink-0">{pct}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -732,8 +757,8 @@ const VenueDetail = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-[32px] p-2 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-[#d1d1d1] flex flex-col md:flex-row gap-3">
-                            <div className="flex-[2] min-h-[350px] md:min-h-[450px] rounded-[24px] overflow-hidden relative">
+                        <div className="bg-white rounded-[24px] md:rounded-[32px] p-2 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border border-[#d1d1d1] flex flex-col md:flex-row gap-3">
+                            <div className="flex-[2] min-h-[260px] md:min-h-[450px] rounded-[20px] md:rounded-[24px] overflow-hidden relative">
                                 <iframe
                                     src={
                                         data?.location?.startsWith('http') ? data?.location :
@@ -767,21 +792,21 @@ const VenueDetail = () => {
                                             { name: "Busway / JakLingko", dist: "450m", type: "Halte Terdekat", icon: "solar:bus-bold", color: "text-green-500", bg: "bg-green-50" },
                                             { name: "Kendaraan Pribadi", dist: "Lihat Rute", type: "Akses Jalan & Tol", icon: "mdi:car", color: "text-orange-500", bg: "bg-orange-50" },
                                         ].map((transport, i) => (
-                                            <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-gray-50/50 hover:bg-gray-100/80 transition-all border border-[#d1d1d1] hover:border-[#999999]">
-                                                <div className="flex items-center gap-4 flex-1">
-                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${transport.bg}`}>
-                                                        <Icon icon={transport.icon} className={`text-[24px] ${transport.color}`} />
+                                            <div key={i} className="flex flex-row items-center justify-between gap-3 p-3 md:p-4 rounded-xl bg-gray-50/50 hover:bg-gray-100/80 transition-all border border-[#d1d1d1] hover:border-[#999999]">
+                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                    <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0 ${transport.bg}`}>
+                                                        <Icon icon={transport.icon} className={`text-[20px] md:text-[24px] ${transport.color}`} />
                                                     </div>
                                                     <div className="flex flex-col min-w-0">
-                                                        <h6 className="text-[15px] font-black text-gray-900 truncate">{transport.name}</h6>
-                                                        <p className="text-[12px] text-gray-500 font-bold mt-0.5">{transport.type} • <span className="text-[#194e9e] font-black">{transport.dist}</span></p>
+                                                        <h6 className="text-[13px] md:text-[15px] font-black text-gray-900 truncate">{transport.name}</h6>
+                                                        <p className="text-[11px] md:text-[12px] text-gray-500 font-bold mt-0.5">{transport.type} • <span className="text-[#194e9e] font-black">{transport.dist}</span></p>
                                                     </div>
                                                 </div>
                                                 <button
                                                     onClick={() => window.open(data?.location?.startsWith('http') ? data.location : `https://google.com/maps/search/${encodeURIComponent((data?.name || '') + ' ' + (data?.location || ''))}`, '_blank')}
-                                                    className="shrink-0 whitespace-nowrap flex items-center justify-center gap-2 px-5 py-2.5 text-[#194e9e] bg-[#194e9e]/5 hover:bg-[#194e9e]/15 rounded-[12px] text-[12px] font-black uppercase tracking-widest transition-all"
+                                                    className="shrink-0 whitespace-nowrap flex items-center justify-center gap-1.5 px-3 md:px-5 py-2 md:py-2.5 text-[#194e9e] bg-[#194e9e]/5 hover:bg-[#194e9e]/15 rounded-[10px] md:rounded-[12px] text-[11px] md:text-[12px] font-black uppercase tracking-widest transition-all"
                                                 >
-                                                    <Icon icon="solar:routing-2-bold" className="text-[18px]" />
+                                                    <Icon icon="solar:routing-2-bold" className="text-[15px] md:text-[18px]" />
                                                     Cek Rute
                                                 </button>
                                             </div>

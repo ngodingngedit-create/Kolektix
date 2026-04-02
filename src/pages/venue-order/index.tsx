@@ -1,1074 +1,448 @@
-// pages/cart.tsx
-// import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
-// import { Container, Group, Checkbox, Text, Title, Button, Paper, Stack, Image, Flex, Card, NumberFormatter, ActionIcon, Center, NumberInput, AspectRatio, Divider, Accordion, UnstyledButton, TextInput, Box, Modal, Select, Textarea, SimpleGrid, Loader, LoadingOverlay } from '@mantine/core';
-// import { useListState, useSetState } from '@mantine/hooks';
-// import { MerchListResponse } from '../dashboard/merch/type';
-// import { Delete, Get } from '@/utils/REST';
-// import useLoggedUser from '@/utils/useLoggedUser';
-// import _ from 'lodash';
-// import { Icon } from '@iconify/react/dist/iconify.js';
-// import { useRouter } from 'next/router';
-// import { useForm, zodResolver } from '@mantine/form';
-// import Cookies from 'js-cookie';
-// import fetch from '@/utils/fetch';
-// import { AddressData, addressDataSchema, AddressUpdateRequest } from '../dashboard/profile/address';
-// import { currencyFormat } from '@/utils/currencyFormat';
-// import { z, ZodAny } from 'zod';
-// import { VenueListResponse } from '../dashboard/venue/type';
-// import moment from 'moment';
-// import { DateInput } from '@mantine/dates';
-// import { notifications } from '@mantine/notifications';
-// import ImageInput from '@/components/ImageInput.tsx';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+import Image from "next/image";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import Cookies from "js-cookie";
+import { notifications } from "@mantine/notifications";
+import { Text, LoadingOverlay } from "@mantine/core";
+import { Icon } from "@iconify/react/dist/iconify.js";
+import useLoggedUser from "@/utils/useLoggedUser";
+import fetch from "@/utils/fetch";
+import useWindowSize from "@/utils/useWindowSize";
+import Countdown, { CountdownRendererFn } from "react-countdown";
 
-
-// type Province = {
-//     id: number;
-//     name: string;
-// }
-
-// type City = {
-//     id: number;
-//     province_id: number;
-//     name: string;
-//     province?: Province;
-// }
-
-// type Checkout = {
-//     event_name: string;
-//     event_banner?: Blob;
-//     nama_pemesan: string;
-//     email_pemesan: string;
-//     phone_pemesan: string;
-//     user_id: number;
-//     total_qty: number;
-//     total_price: number;
-//     venue_id: number;
-//     grandtotal: number;
-//     payment_method: string;
-//     start_date: string;
-//     end_date: string;
-// };
-
-// type FormInput = Omit<Checkout, 'user_id' | 'payment_method' | 'grandtotal' | 'total_qty' | 'total_price' | 'venue_id'>;
-
-// export const formStateSchema = z.object({
-//     nama_pemesan: z.string().nonempty("Nama pemesan tidak boleh kosong.").optional().nullable(),
-//     email_pemesan: z.string().email("Email pemesan tidak boleh kosong.").optional().nullable(),
-//     receiver: z.object({
-//         name: z.string().nonempty("Nama penerima tidak boleh kosong."),
-//         address_name: z.string().nonempty("Nama alamat tidak boleh kosong."),
-//         phone: z.string().nonempty("Nomor telepon tidak boleh kosong."),
-//         province_id: z.number().int().positive("ID provinsi harus berupa bilangan bulat positif."),
-//         city_id: z.number().int().positive("ID kota harus berupa bilangan bulat positif."),
-//         pos_code: z.number().int().nonnegative("Kode pos harus berupa bilangan bulat non-negatif."),
-//         detail: z.string().nonempty("Detail alamat tidak boleh kosong."),
-//     }),
-//     payment_method: z.string().nonempty("Metode Pembayaran tidak boleh kosong."),
-//     courier: z.string().nonempty("Kurir tidak boleh kosong."),
-// });
-
-// export type VenueBookingOrder = {
-//     id: number;
-//     slug: string;
-//     date_start: string;
-//     date_end: string;
-// }
-
-// export default function Cart() {
-//     const [isr, setIsr] = useState(false);
-//     const [orderData, setOrderData] = useSetState<VenueBookingOrder>({
-//         id: 0,
-//         slug: '',
-//         date_start: '',
-//         date_end: ''
-//     })
-//     const [venue, setVenue] = useState<VenueListResponse>();
-//     const [onEditDate, setOnEditDate] = useState(false);
-//     const [loading, setLoading] = useListState<string>();
-//     const [paymentOption, setPaymentOption] = useState<'all' | 'divide'>('all');
-//     const user = useLoggedUser();
-//     const router = useRouter();
-
-//     const { setValues: setFormValues, values: fv, getInputProps: inputProps, errors: fe, validate: validateForm } = useForm<Checkout>({
-//         onValuesChange: (val) => {
-//             val.phone_pemesan = (val.phone_pemesan ?? '').replaceAll(/\D/g, '');
-//             return val;
-//         }
-//     });
-
-//     useEffect(() => {
-//         setIsr(true);
-//     }, []);
-
-//     useEffect(() => {
-//         getData();
-//         try {
-//             const _orderData: VenueBookingOrder = JSON.parse(Cookies.get('venue_order_data') ?? '[]');
-//             if (!_orderData) router.push('/venue');
-//             setOrderData(_orderData);
-//             setFormValues({
-//                 start_date: _orderData.date_start,
-//                 end_date: _orderData.date_end,
-//             });
-//         } catch (error) {}
-//     }, [isr]);
-
-//     useEffect(() => {
-//         getData();
-//     }, [orderData]);
-
-//     const getData = async () => {
-//         if (!Boolean(venue)) {
-//             await fetch<any, VenueListResponse>({
-//                 url: `venue/${orderData?.slug}`,
-//                 method: 'GET',
-//                 before: () => setLoading.append('getdata'),
-//                 success: ({ data }) => data && setVenue(data),
-//                 complete: () => setLoading.filter(e => e != 'getdata'),
-//             });
-//         }
-//     };
-
-//     const orderSummary = useMemo(() => {
-//         function getDaysBetweenDates(startDateString: string, endDateString: string): number {
-//             const startDate = new Date(startDateString);
-//             const endDate = new Date(endDateString);
-//             const differenceInTime = endDate.getTime() - startDate.getTime();
-//             const differenceInDays = differenceInTime / (1000 * 3600 * 24);
-//             return Math.abs(differenceInDays);
-//         }
-
-//         const count = getDaysBetweenDates(orderData.date_start, orderData.date_end) + 1;
-//         const subprice = Math.round((paymentOption == 'all' ? venue?.starting_price : venue?.minimum_price) ?? 0);
-//         const price = paymentOption == 'all' ? count * subprice : subprice;
-//         const admin = 2000;
-//         const ppn = (price + admin) * 0.11;
-//         const total = price + admin + ppn;
-        
-//         const subfullprice = count * Math.round(venue?.starting_price ?? 0);
-//         const fullprice = (subfullprice + admin) * 1.11;
-
-//         return {
-//             array: [
-//                 [`Booking ${count} Hari`, price],
-//                 ["Biaya Admin", admin],
-//                 ["PPN (11%)", ppn],
-//                 ["Total Pembayaran", total],
-//             ],
-//             count, subprice, price, ppn, admin, total, fullprice
-//         }
-//     }, [venue, orderData, paymentOption]);
-
-//     const handleCheckout = async () => {
-//         const valid = validateForm();
-//         if (valid.hasErrors) return;
-
-//         await fetch<Checkout, any>({
-//             url: 'booking-venue',
-//             method: 'POST',
-//             data: {
-//                 user_id: user?.id ?? 0,
-//                 event_name: fv.event_name,
-//                 event_banner: fv.event_banner,
-//                 total_qty: orderSummary.count,
-//                 total_price: orderSummary.fullprice,
-//                 venue_id: orderData?.id,
-//                 grandtotal: orderSummary.total,
-//                 payment_method: 'xendit',
-//                 start_date: fv.start_date,
-//                 end_date: fv.end_date,
-//                 nama_pemesan: fv.nama_pemesan,
-//                 email_pemesan: fv.email_pemesan,
-//                 phone_pemesan: fv.phone_pemesan
-//             },
-//             before: () => setLoading.append('submit'),
-//             success: (data) => {
-//                 if (data['xendit_invoice']) {
-//                     router.push(data['xendit_invoice'])
-//                 } else {
-//                     notifications.show({
-//                         position: 'top-right',
-//                         color: 'red',
-//                         message: data['message'] ?? 'Gagal Checkout'
-//                     });
-//                     setTimeout(() => {
-//                         router.reload();
-//                     }, 2000);
-//                 }
-//             },
-//             complete: () => setLoading.filter(e => e != 'submit'),
-//             error: (err) => {
-//                 notifications.show({
-//                     position: 'top-right',
-//                     color: 'red',
-//                     message: err.response.data.message ?? 'Gagal Checkout'
-//                 });
-//                 setTimeout(() => {
-//                     router.reload();
-//                 }, 2000);
-//             },
-//         });
-//     }
-
-//     if (loading.includes('getdata')) return <LoadingOverlay visible />;
-
-//     return (
-//         <div className={`bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px]`}>
-//             <Container size="lg" mb="xl" className={`mt-[85px] md:mt-[100px`}>
-//                 <Stack gap={25} mb={40}>
-//                     <Stack gap={0}>
-//                         <Title order={1} size="h2">
-//                             Booking Venue
-//                         </Title>
-//                         <Text size="sm" c="gray">
-//                             Selesaikan Pembayaran untuk booking venue
-//                         </Text>
-//                     </Stack>
-
-//                     <Divider />
-
-//                     <Flex gap={20} w="100%" wrap="wrap" align="stretch">
-//                         <Stack gap={15} className={`flex-grow`}>
-//                             <DropdownComponent title="Data Event" icon="lucide:info" defaultOpened>
-//                                 <Stack>
-//                                     <TextInput
-//                                         label="Nama Event"
-//                                         placeholder="Masukan Nama Event"
-//                                         {...inputProps('event_name')}
-//                                     />
-
-//                                     <ImageInput
-//                                         dimension={[724, 340]}
-//                                         label="Banner Event"
-//                                         description='Ukuran gambar 724x340 px, Maks 2MB'
-//                                         value={fv?.event_banner}
-//                                         onChange={e => setFormValues({ event_banner: e ? e : undefined })}
-//                                         error={fe?.event_banner}
-//                                     />
-//                                 </Stack>
-//                             </DropdownComponent>
-
-//                             <DropdownComponent title="Data Pemesan" icon="lucide:info" defaultOpened>
-//                                 <Stack>
-//                                     <TextInput
-//                                         label="Nama Pemesan"
-//                                         placeholder="Masukan Nama Pemesan"
-//                                         {...inputProps('nama_pemesan')}
-//                                     />
-//                                     <TextInput
-//                                         label="Email"
-//                                         placeholder="Masukan Email Pemesan"
-//                                         {...inputProps('email_pemesan')}
-//                                     />
-//                                     <TextInput
-//                                         label="No. Telp Pemesan"
-//                                         placeholder="Masukan No. Telp Pemesan"
-//                                         {...inputProps('phone_pemesan')}
-//                                     />
-//                                     <Text size="xs" c="gray">*Pastikan data yang dimasukan sudah sesuai</Text>
-//                                 </Stack>
-//                             </DropdownComponent>
-
-//                             <DropdownComponent title="Detail Booking" icon="lucide:info" defaultOpened>
-//                                 <Stack>
-//                                     <Flex justify="space-between" gap={20} align="center">
-//                                         <Stack gap={0}>
-//                                             <Text size="sm" c="gray">Venue</Text>
-//                                             <Text>{venue?.name}</Text>
-//                                         </Stack>
-//                                         {Boolean(venue?.venue_gallery) && (
-//                                             <Image src={venue?.venue_gallery[0].image_url ?? '#'} bg="gray.1" radius={7} w={50} h={50} />
-//                                         )}
-//                                     </Flex>
-//                                     <Stack gap={0}>
-//                                         <Text size="sm" c="gray">Lokasi</Text>
-//                                         <Text>{venue?.location}</Text>
-//                                     </Stack>
-//                                     <Flex gap={10} className={`[&>*]:!flex-grow`} wrap="wrap">
-//                                         <Stack gap={0}>
-//                                             <Text size="sm" c="gray">Maks. Kapasitas</Text>
-//                                             <Text><NumberFormatter prefix={''} value={venue?.max_capacity} /></Text>
-//                                         </Stack>
-//                                         <Stack gap={0}>
-//                                             <Text size="sm" c="gray">Jumlah Kursi</Text>
-//                                             <Text><NumberFormatter prefix={''} value={venue?.seat_capacity} /></Text>
-//                                         </Stack>
-//                                     </Flex>
-//                                     <Flex justify="space-between" gap={20} align="center">
-//                                         <Stack gap={0}>
-//                                             <Text size="sm" c="gray">Tanggal Booking</Text>
-//                                             {!onEditDate ? (
-//                                                 <Text>{moment(fv?.start_date).format('DD MMM YYYY')} - {moment(fv?.end_date).format('DD MMM YYYY')}</Text>
-//                                             ) : (
-//                                                 <Flex gap={10} mt={5} wrap="wrap">
-//                                                     <DateInput
-//                                                         minDate={new Date()}
-//                                                         maxDate={new Date(fv?.end_date)}
-//                                                         value={fv?.start_date ? new Date(fv?.start_date) : undefined}
-//                                                         onChange={e => setFormValues({ start_date: moment(e).format('YYYY-MM-DD')})}
-//                                                         valueFormat='DD MMMM YYYY'
-//                                                         placeholder="Dari Tanggal"
-//                                                     />
-//                                                     <DateInput
-//                                                         minDate={new Date(fv?.start_date)}
-//                                                         value={fv?.end_date ? new Date(fv?.end_date) : undefined}
-//                                                         onChange={e => setFormValues({ end_date: moment(e).format('YYYY-MM-DD')})}
-//                                                         valueFormat='DD MMMM YYYY'
-//                                                         placeholder="Sampai Tanggal"
-//                                                     />
-//                                                 </Flex>
-//                                             )}
-//                                         </Stack>
-//                                         <Button onClick={() => setOnEditDate(!onEditDate)} variant="transparent" color="#194e9e">
-//                                             {onEditDate ? 'Simpan' : 'Edit'}
-//                                         </Button>
-//                                     </Flex>
-//                                 </Stack>
-//                             </DropdownComponent>
-
-//                             <DropdownComponent title={'Opsi Pembayaran'} icon={'hugeicons:money-04'} defaultOpened>
-//                                 <Stack>
-//                                     <Flex component="label" justify="space-between" align="center" gap={15} className={`cursor-pointer`}>
-//                                         <Stack gap={0}>
-//                                             <Text>Pembayaran Penuh</Text>
-//                                             <Text maw={400} c="gray">Bayar Total (<NumberFormatter value={Math.round(venue?.starting_price ?? 0)} />) sekarang.</Text>
-//                                         </Stack>
-//                                         <Checkbox checked={paymentOption == 'all'} onChange={e => e.target.checked ? setPaymentOption('all') : {}}/>
-//                                         <Box pos="absolute" className={``} />
-//                                     </Flex>
-//                                     {(Boolean(venue?.minimum_price) || (venue?.minimum_price ?? 0) > 0) && (
-//                                         <>
-//                                             <Divider />
-//                                             <Flex component="label" justify="space-between" align="center" gap={15} className={`cursor-pointer`}>
-//                                                 <Stack gap={0}>
-//                                                     <Text>Bayar Sebagian</Text>
-//                                                     <Text maw={400} c="gray">Bayar sebagian (<NumberFormatter value={Math.round(venue?.minimum_price ?? 0)} />) sekarang. Lakukan pelunasan sebelum tanggal {moment(orderData?.date_start).format('DD MMMM YYYY')}.</Text>
-//                                                 </Stack>
-//                                                 <Checkbox checked={paymentOption == 'divide'} onChange={e => e.target.checked ? setPaymentOption('divide') : {}}/>
-//                                             </Flex>
-//                                         </>
-//                                     )}
-//                                 </Stack>
-//                             </DropdownComponent>
-
-//                             {/* <DropdownComponent title={'Metode Pembayaran'} icon={'si:money-line'} defaultOpened>
-
-//                             </DropdownComponent> */}
-
-//                             {/* <DropdownComponent title="Metode Pembayaran" icon="fluent:payment-16-filled">
-//                                 <UnstyledButton>
-//                                         <Card p={10} radius="md" bg="gray.1">
-//                                             <Flex gap={20} align="center">
-//                                                 <AspectRatio className={`shrink-0`}>
-//                                                     <Image w={50} h={50} bg="gray.1" radius="sm" />
-//                                                 </AspectRatio>
-
-//                                                 <Text w="100%">PAYMENT_METHOD_NAME</Text>
-
-//                                                 <Icon icon="uiw:circle-check" className={`text-[#194E9E] text-[24px] shrink-0 mr-[10px]`} />
-//                                             </Flex>
-//                                         </Card>
-//                                     </UnstyledButton>
-//                             </DropdownComponent> */}
-//                         </Stack>
-
-//                         <Stack gap={10} className={`!flex-grow md:!max-w-[400px]`}>
-//                             <Card withBorder radius={10} p={20}>
-//                                 <Stack gap={20}>
-//                                     <Flex gap={10} align="center">
-//                                         <Icon icon="lucide:info" className={`text-primary-base text-[20px]`}/>
-//                                         <Text fw={600}>Detail Pembayaran</Text>
-//                                     </Flex>
-
-//                                     <Stack>
-//                                         {orderSummary.array.map((e, i) => (
-//                                             <Flex justify="space-between" key={i}>
-//                                                 <Text fw={e[0] == "Total Pembayaran" ? 600 : 400}>{e[0]}</Text>
-//                                                 <Text fw={e[0] == "Total Pembayaran" ? 600 : 400}><NumberFormatter value={e[1]}/></Text>
-//                                             </Flex>
-//                                         ))}
-//                                     </Stack>
-//                                 </Stack>
-//                             </Card>
-//                         </Stack>
-//                     </Flex>
-//                 </Stack>
-
-//                 <Card pos="fixed" className={`bottom-0 left-0 w-[100vw] border-t !border-primary-light`} py={10} withBorder>
-//                     <Container size="lg" w="100%">
-//                         <Flex justify="end" w="100%">
-//                             <Button
-//                                 loading={loading.includes('submit')}
-//                                 onClick={handleCheckout}
-//                                 className={`uppercase`}
-//                                 color="#194E9E"
-//                                 rightSection={<Icon icon="uiw:check" />}
-//                                 radius="xl">
-//                                 Proses Pembayaran
-//                             </Button>
-//                         </Flex>
-//                     </Container>
-//                 </Card>
-//             </Container>
-//         </div>
-//     );
-// }
-
-// const DropdownComponent = ({ defaultOpened, children, title, icon }: PropsWithChildren<{ defaultOpened?: boolean, title: string, icon: string }>) => {
-//     const [opened, setOpened] = useState<boolean>(defaultOpened ?? false);
-
-//     return (
-//         <>
-//             <Card bg="white" radius={10} withBorder>
-//                 <Stack>
-//                     <Flex justify="space-between" align="center" gap={20} onClick={() => setOpened(!opened)} className={`cursor-pointer`}>
-//                         <Flex align="center" gap={10}>
-//                             <Icon icon={icon} className={`text-[20px] text-[#194E9E]`} />
-//                             <Text>{title}</Text>
-//                         </Flex>
-
-//                         <ActionIcon variant="transparent" c="gray">
-//                             <Icon icon="uiw:down" className={`transition-transform ${opened ? '!rotate-180' : ''}`}/>
-//                         </ActionIcon>
-//                     </Flex>
-
-//                     <Stack className={`${opened ? '' : '!hidden'}`} p={5}>
-//                         <Divider />
-//                         {children}
-//                     </Stack>
-//                 </Stack>
-//             </Card>
-//         </>
-//     );
-// };
-
-import { PropsWithChildren, useEffect, useMemo, useState } from 'react';
-import { Container, Group, Checkbox, Text, Title, Button, Paper, Stack, Image, Flex, Card, NumberFormatter, ActionIcon, Center, NumberInput, AspectRatio, Divider, Accordion, UnstyledButton, TextInput, Box, Modal, Select, Textarea, SimpleGrid, Loader, LoadingOverlay, ComboboxItem, OptionsFilter } from '@mantine/core';
-import { useListState, useSetState } from '@mantine/hooks';
-import { MerchListResponse } from '../dashboard/merch/type';
-import { Delete, Get } from '@/utils/REST';
-import useLoggedUser from '@/utils/useLoggedUser';
-import _ from 'lodash';
-import { Icon } from '@iconify/react/dist/iconify.js';
-import { useRouter } from 'next/router';
-import { useForm, zodResolver } from '@mantine/form';
-import Cookies from 'js-cookie';
-import fetch from '@/utils/fetch';
-import { AddressData, addressDataSchema, AddressUpdateRequest } from '../dashboard/profile/address';
-import { currencyFormat } from '@/utils/currencyFormat';
-import { z, ZodAny } from 'zod';
-import { VenueListResponse } from '../dashboard/venue/type';
-import moment from 'moment';
-import { DateInput } from '@mantine/dates';
-import { notifications } from '@mantine/notifications';
-import ImageInput from '@/components/ImageInput.tsx';
-import axios from 'axios';
-
-type Province = {
-    id: number;
-    name: string;
-}
-
-type City = {
-    id: number;
-    province_id: number;
-    name: string;
-    province?: Province;
-}
-
-// Sesuaikan tipe Event dengan response API
-type Event = {
-    id: number;
-    creator_id: string;
-    event_social_media_id: string | null;
-    category_id: string | null;
-    name: string; // Gunakan 'name' bukan 'title'
-    // tambahkan field lain sesuai kebutuhan
-    banner?: string;
-    description?: string;
-    start_date?: string;
-    end_date?: string;
-    location?: string;
-}
-
-type Checkout = {
-    event_id: number | null;
-    event_banner?: Blob;
-    nama_pemesan: string;
-    email_pemesan: string;
-    phone_pemesan: string;
-    user_id: number;
-    total_qty: number;
-    total_price: number;
-    venue_id: number;
-    grandtotal: number;
-    payment_method: string;
-    start_date: string;
-    end_date: string;
-};
-
-type FormInput = Omit<Checkout, 'user_id' | 'payment_method' | 'grandtotal' | 'total_qty' | 'total_price' | 'venue_id'>;
-
-export const formStateSchema = z.object({
-    event_id: z.number().nullable(),
-    nama_pemesan: z.string().nonempty("Nama pemesan tidak boleh kosong.").optional().nullable(),
-    email_pemesan: z.string().email("Email pemesan tidak boleh kosong.").optional().nullable(),
-    receiver: z.object({
-        name: z.string().nonempty("Nama penerima tidak boleh kosong."),
-        address_name: z.string().nonempty("Nama alamat tidak boleh kosong."),
-        phone: z.string().nonempty("Nomor telepon tidak boleh kosong."),
-        province_id: z.number().int().positive("ID provinsi harus berupa bilangan bulat positif."),
-        city_id: z.number().int().positive("ID kota harus berupa bilangan bulat positif."),
-        pos_code: z.number().int().nonnegative("Kode pos harus berupa bilangan bulat non-negatif."),
-        detail: z.string().nonempty("Detail alamat tidak boleh kosong."),
-    }),
-    payment_method: z.string().nonempty("Metode Pembayaran tidak boleh kosong."),
-    courier: z.string().nonempty("Kurir tidak boleh kosong."),
-});
-
-export type VenueBookingOrder = {
+interface VenueBookingOrder {
     id: number;
     slug: string;
-    date_start: string;
-    date_end: string;
+    selected_slots: string[];
 }
 
-// Buat instance axios dengan base URL dari environment variable
-const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_WS_URL,
-});
-
-export default function Cart() {
-    const [isr, setIsr] = useState(false);
-    const [orderData, setOrderData] = useSetState<VenueBookingOrder>({
-        id: 0,
-        slug: '',
-        date_start: '',
-        date_end: ''
-    })
-    const [venue, setVenue] = useState<VenueListResponse>();
-    const [onEditDate, setOnEditDate] = useState(false);
-    const [loading, setLoading] = useListState<string>();
-    const [paymentOption, setPaymentOption] = useState<'all' | 'divide'>('all');
-    const user = useLoggedUser();
+export default function VenueCheckout() {
     const router = useRouter();
-
-    // State untuk events - diubah untuk menyimpan semua event
-    const [events, setEvents] = useState<Event[]>([]);
-    const [eventsLoading, setEventsLoading] = useState(false);
-    const [dropdownOpened, setDropdownOpened] = useState(false);
-    const [searchEvent, setSearchEvent] = useState('');
-
-    const { setValues: setFormValues, values: fv, getInputProps: inputProps, errors: fe, validate: validateForm } = useForm<Checkout>({
-        initialValues: {
-            event_id: null,
-            event_banner: undefined,
-            nama_pemesan: '',
-            email_pemesan: '',
-            phone_pemesan: '',
-            user_id: 0,
-            total_qty: 0,
-            total_price: 0,
-            venue_id: 0,
-            grandtotal: 0,
-            payment_method: '',
-            start_date: '',
-            end_date: ''
-        },
-        onValuesChange: (val) => {
-            if (val.phone_pemesan) {
-                val.phone_pemesan = val.phone_pemesan.replaceAll(/\D/g, '');
-            }
-            return val;
-        }
-    });
+    const user = useLoggedUser();
+    const [loading, setLoading] = useState(false);
+    const [pageLoading, setPageLoading] = useState(true);
+    const { width } = useWindowSize();
+    
+    const [orderData, setOrderData] = useState<VenueBookingOrder | null>(null);
+    const [venueDetail, setVenueDetail] = useState<any>(null);
+    
+    // Mutable Selected Slots State
+    const [checkoutSlots, setCheckoutSlots] = useState<{raw: string, dateFull: string, date: string, court: number, time: string, note: string}[]>([]);
+    
+    // Form States
+    const [namaPemesan, setNamaPemesan] = useState("");
+    const [emailPemesan, setEmailPemesan] = useState("");
+    const [phonePemesan, setPhonePemesan] = useState("");
+    
+    // Accordions state
+    const [collapseDataPemesan, setCollapseDataPemesan] = useState(true);
+    
+    // Auto-countdown 15 minutes
+    const [countdownTarget] = useState(Date.now() + 15 * 60 * 1000);
 
     useEffect(() => {
-        setIsr(true);
-    }, []);
-
-    useEffect(() => {
-        getData();
-        try {
-            const _orderData: VenueBookingOrder = JSON.parse(Cookies.get('venue_order_data') ?? 'null');
-            if (!_orderData) {
-                router.push('/venue');
-                return;
-            }
-            setOrderData(_orderData);
-            setFormValues({
-                start_date: _orderData.date_start,
-                end_date: _orderData.date_end,
-            });
-        } catch (error) {
-            console.error('Error parsing order data:', error);
-        }
-    }, [isr]);
-
-    useEffect(() => {
-        getData();
-    }, [orderData]);
-
-    // Fetch semua events saat dropdown dibuka
-    useEffect(() => {
-        if (dropdownOpened) {
-            fetchAllEvents();
-        }
-    }, [dropdownOpened, searchEvent]); // Tambah searchEvent sebagai dependency
-
-    const getData = async () => {
-        if (!venue && orderData?.slug) {
-            await fetch<any, VenueListResponse>({
-                url: `venue/${orderData.slug}`,
-                method: 'GET',
-                before: () => setLoading.append('getdata'),
-                success: ({ data }) => data && setVenue(data),
-                complete: () => setLoading.filter(e => e != 'getdata'),
-                error: (err) => {
-                    console.error('Error fetching venue:', err);
-                    notifications.show({
-                        position: 'top-right',
-                        color: 'red',
-                        message: 'Gagal mengambil data venue'
-                    });
+        const orderStr = Cookies.get('venue_order_data');
+        if (orderStr) {
+            try {
+                const parsed = JSON.parse(orderStr);
+                setOrderData(parsed);
+                
+                // Convert raw slots into the mutable checkoutSlots state
+                if (parsed.selected_slots) {
+                    const mappedSlots = parsed.selected_slots.map((s: string) => {
+                        const parts = s.split('-');
+                        if (parts.length >= 5) {
+                            const dateFull = `${parts[0]}-${parts[1]}-${parts[2]}`;
+                            const dateObj = new Date(dateFull);
+                            const date = isNaN(dateObj.getTime()) 
+                                ? `${parts[2]}-${parts[1]}-${parts[0]}` 
+                                : dateObj.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+                            const court = parseInt(parts[3]);
+                            const time = parts[4];
+                            return { raw: s, dateFull, date, court, time, note: "" };
+                        }
+                        return null;
+                    }).filter(Boolean);
+                    setCheckoutSlots(mappedSlots);
                 }
+                
+                fetchVenueData(parsed.slug);
+            } catch (e) {
+                router.push('/venue');
+            }
+        } else {
+            router.push('/venue');
+        }
+    }, [router]);
+
+    const fetchVenueData = async (slug: string) => {
+        // --- DUMMY FALLBACK DATA FOR TESTING ---
+        const dummyName = slug?.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || 'Nama Venue';
+        const isPadel = dummyName.toLowerCase().includes('padel');
+
+        const dummyVenue = {
+            id: 999,
+            slug: slug,
+            name: dummyName,
+            starting_price: isPadel ? 30000 : 95000,
+            venue_gallery: [
+                { image_url: isPadel ? "https://images.unsplash.com/photo-1622396345638-3dc682ae12aa?q=80&w=1200" : "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1200" }
+            ],
+            creator: {
+                name: "Gelora Bung Karno",
+                image_url: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=200"
+            }
+        };
+
+        setVenueDetail(dummyVenue as any); // Display dummy data instantly for UX
+
+        try {
+            const res = await fetch<any>({
+                url: `venue/${slug}`,
+                method: 'GET'
             });
+            if (res?.data) {
+                setVenueDetail(res.data);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setPageLoading(false);
         }
     };
+    
+    const displayTotalCount = checkoutSlots.length;
+    const basePrice = venueDetail?.starting_price ?? 95000;
+    const adminFee = displayTotalCount > 0 ? (2000 * displayTotalCount) : 0;
+    const subtotal = displayTotalCount * basePrice;
+    const grandtotal = subtotal + adminFee; 
+    
+    const isFormValid = namaPemesan && emailPemesan && phonePemesan && checkoutSlots.length > 0;
 
-    // Fungsi baru untuk fetch semua events
-    const fetchAllEvents = async () => {
-        if (!api.defaults.baseURL) {
-            console.error('API Base URL is not defined');
-            notifications.show({
-                position: 'top-right',
-                color: 'red',
-                message: 'Konfigurasi API tidak ditemukan'
-            });
+    const handleDeleteSlot = (index: number) => {
+        setCheckoutSlots(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleDeleteAll = () => {
+        setCheckoutSlots([]);
+    };
+
+    const handleNoteChange = (index: number, text: string) => {
+        setCheckoutSlots(prev => {
+            const newArr = [...prev];
+            newArr[index].note = text;
+            return newArr;
+        });
+    };
+
+    const submitForm = async () => {
+        if (!isFormValid) {
+            notifications.show({ color: 'red', message: 'Tolong lengkapi data pemesan dan pilih setidaknya 1 jadwal.' });
             return;
         }
-
+        
+        let start_date = checkoutSlots[0]?.dateFull || new Date().toISOString().split('T')[0];
+        let end_date = checkoutSlots[checkoutSlots.length - 1]?.dateFull || start_date;
+        
+        setLoading(true);
+        
         try {
-            setEventsLoading(true);
-            
-            // Fetch page pertama untuk mendapatkan total pages
-            const firstResponse = await api.get('/event', {
-                params: {
-                    page: 1,
-                    search: searchEvent || undefined,
-                    limit: 12
-                }
-            });
+            // Incorporating notes from each slot
+            const compiledNotes = checkoutSlots.map(s => s.note).join(' | ');
 
-            let allEvents: Event[] = [];
+            const payload = {
+                user_id: user?.id ?? 0,
+                event_name: `Booking Lapangan ${venueDetail?.name}`,
+                total_qty: displayTotalCount,
+                total_price: grandtotal,
+                venue_id: venueDetail?.id,
+                grandtotal: grandtotal,
+                payment_method: 'xendit', // By default
+                start_date: start_date,
+                end_date: end_date,
+                nama_pemesan: namaPemesan,
+                email_pemesan: emailPemesan,
+                phone_pemesan: phonePemesan,
+                notes: compiledNotes // or whatever the backend expects
+            };
             
-            if (firstResponse?.data) {
-                // Ambil data dari response pertama
-                if (firstResponse.data.data && Array.isArray(firstResponse.data.data)) {
-                    allEvents = [...firstResponse.data.data];
-                    
-                    // Dapatkan total pages
-                    const totalPages = firstResponse.data.pagination?.last_page || 1;
-                    
-                    // Jika ada lebih dari 1 halaman, fetch halaman berikutnya
-                    if (totalPages > 1) {
-                        const pagePromises = [];
-                        for (let page = 2; page <= totalPages; page++) {
-                            pagePromises.push(
-                                api.get('/event', {
-                                    params: {
-                                        page: page,
-                                        search: searchEvent || undefined,
-                                        limit: 12
-                                    }
-                                })
-                            );
-                        }
-                        
-                        // Tunggu semua promise selesai
-                        const remainingResponses = await Promise.all(pagePromises);
-                        
-                        // Gabungkan semua data
-                        remainingResponses.forEach(response => {
-                            if (response.data?.data && Array.isArray(response.data.data)) {
-                                allEvents = [...allEvents, ...response.data.data];
-                            }
-                        });
-                    }
-                } 
-                // Jika response.data langsung array
-                else if (Array.isArray(firstResponse.data)) {
-                    allEvents = firstResponse.data;
-                }
+            const req = await fetch<any, any>({
+                url: 'booking-venue',
+                method: 'POST',
+                data: payload,
+            });
+            
+            if (req?.xendit_invoice) {
+                router.push(req.xendit_invoice);
+            } else {
+                notifications.show({ position: 'top-right', color: 'green', message: 'Booking Berhasil Diajukan!' });
+                setTimeout(() => router.push('/dashboard/venue/booking'), 1500);
             }
-            
-            setEvents(allEvents);
-            console.log(`Total events fetched: ${allEvents.length}`);
-            
-        } catch (error) {
-            console.error('Error fetching events:', error);
-            setEvents([]);
+        } catch (e: any) {
             notifications.show({
                 position: 'top-right',
                 color: 'red',
-                message: 'Gagal mengambil data event'
+                message: e?.response?.data?.message || 'Gagal membuat pesanan.'
             });
         } finally {
-            setEventsLoading(false);
+            setLoading(false);
         }
     };
 
-    const orderSummary = useMemo(() => {
-        function getDaysBetweenDates(startDateString: string, endDateString: string): number {
-            if (!startDateString || !endDateString) return 0;
-            const startDate = new Date(startDateString);
-            const endDate = new Date(endDateString);
-            const differenceInTime = endDate.getTime() - startDate.getTime();
-            const differenceInDays = differenceInTime / (1000 * 3600 * 24);
-            return Math.abs(differenceInDays);
-        }
+    const renderer: CountdownRendererFn = ({ minutes, seconds }) => {
+        return (
+            <span className="font-bold tracking-widest text-[13px]">
+                {String(minutes).padStart(2, "0")} : {String(seconds).padStart(2, "0")}
+            </span>
+        );
+    };
 
-        const count = getDaysBetweenDates(orderData.date_start, orderData.date_end) + 1;
-        const subprice = Math.round((paymentOption == 'all' ? venue?.starting_price : venue?.minimum_price) ?? 0);
-        const price = paymentOption == 'all' ? count * subprice : subprice;
-        const admin = 2000;
-        // PPN dihapus
-        const total = price + admin;
-        
-        const subfullprice = count * Math.round(venue?.starting_price ?? 0);
-        const fullprice = (subfullprice + admin);
-
-        return {
-            array: [
-                [`Booking ${count} Hari`, price],
-                ["Biaya Admin", admin],
-                ["Total Pembayaran", total],
-            ],
-            count, subprice, price, ppn: 0, admin, total, fullprice
-        }
-    }, [venue, orderData, paymentOption]);
-
-    const handleCheckout = async () => {
-        const valid = validateForm();
-        if (valid.hasErrors) return;
-
-        if (!fv.event_id) {
-            notifications.show({
-                position: 'top-right',
-                color: 'red',
-                message: 'Pilih event terlebih dahulu'
-            });
-            return;
-        }
-
-        await fetch<Checkout, any>({
-            url: 'booking-venue',
-            method: 'POST',
-            data: {
-                user_id: user?.id ?? 0,
-                event_id: fv.event_id,
-                event_banner: fv.event_banner,
-                total_qty: orderSummary.count,
-                total_price: orderSummary.fullprice,
-                venue_id: orderData?.id,
-                grandtotal: orderSummary.total,
-                payment_method: 'xendit',
-                start_date: fv.start_date,
-                end_date: fv.end_date,
-                nama_pemesan: fv.nama_pemesan,
-                email_pemesan: fv.email_pemesan,
-                phone_pemesan: fv.phone_pemesan
-            },
-            before: () => setLoading.append('submit'),
-            success: (data) => {
-                if (data?.['xendit_invoice']) {
-                    router.push(data['xendit_invoice']);
-                } else {
-                    notifications.show({
-                        position: 'top-right',
-                        color: 'red',
-                        message: data?.['message'] ?? 'Gagal Checkout'
-                    });
-                }
-            },
-            complete: () => setLoading.filter(e => e != 'submit'),
-            error: (err) => {
-                notifications.show({
-                    position: 'top-right',
-                    color: 'red',
-                    message: err?.response?.data?.message ?? 'Gagal Checkout'
-                });
-            },
-        });
-    }
-
-    // Konversi events ke format Select options
-    const eventOptions = events.map(event => ({
-        value: event.id?.toString() ?? '',
-        label: event.name ?? 'Unknown Event',
-    }));
-
-    // Filter events berdasarkan pencarian untuk ditampilkan di dropdown
-    const filteredEvents = searchEvent 
-        ? events.filter(event => 
-            event.name?.toLowerCase().includes(searchEvent.toLowerCase())
-          )
-        : events;
-
-    // Cari event yang dipilih
-    const selectedEvent = fv.event_id ? events.find(e => e.id === fv.event_id) : null;
-
-    if (loading.includes('getdata')) return <LoadingOverlay visible />;
+    if (pageLoading) return <LoadingOverlay visible />;
 
     return (
-        <div className="bg-primary-light mt-[-20px] pt-[20px] pb-[30px] mb-[-20px]">
-            <Container size="lg" mb="xl" className="mt-[85px] md:mt-[100px]">
-                <Stack gap={25} mb={40}>
-                    <Stack gap={0}>
-                        <Title order={1} size="h2">
-                            Booking Venue
-                        </Title>
-                        <Text size="sm" c="gray">
-                            Selesaikan Pembayaran untuk booking venue
-                        </Text>
-                    </Stack>
-
-                    <Divider />
-
-                    <Flex gap={20} w="100%" wrap="wrap" align="stretch">
-                        <Stack gap={15} className="flex-grow">
-                            <DropdownComponent title="Data Event" icon="lucide:info" defaultOpened>
-                                <Stack>
-                                    <Select
-                                        label="Pilih Event"
-                                        placeholder="Cari dan pilih event"
-                                        data={filteredEvents.map(event => ({
-                                            value: event.id?.toString() ?? '',
-                                            label: event.name ?? 'Unknown Event',
-                                        }))}
-                                        value={fv.event_id?.toString() || null}
-                                        onChange={(value) => setFormValues({ event_id: value ? parseInt(value, 10) : null })}
-                                        error={fe?.event_id}
-                                        searchable
-                                        clearable
-                                        nothingFoundMessage="Event tidak ditemukan"
-                                        rightSection={eventsLoading ? <Loader size="xs" /> : null}
-                                        onDropdownOpen={() => {
-                                            setDropdownOpened(true);
-                                            setSearchEvent('');
-                                        }}
-                                        onDropdownClose={() => {
-                                            setDropdownOpened(false);
-                                        }}
-                                        onSearchChange={(search) => {
-                                            setSearchEvent(search || '');
-                                        }}
+        <div className="bg-primary-light pb-[100px] min-h-screen">
+            <style jsx>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background-color: #cbd5e1;
+                    border-radius: 10px;
+                }
+            `}</style>
+            
+            <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-5 mt-8 gap-x-7 pt-[80px] md:pt-[100px] px-4 md:px-0">
+                <h2 className="col-span-5 mb-4 text-2xl font-bold">Informasi Pemesanan</h2>
+                
+                {/* LEFT COLUMN: Data Pemesan & Jadwal Pilihan */}
+                <div className="col-span-3 flex flex-col gap-3">
+                    
+                    {/* Data Pemesan Card */}
+                    <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm mb-2">
+                        <div className="px-5 py-4 flex items-center justify-between cursor-pointer" onClick={() => setCollapseDataPemesan(!collapseDataPemesan)}>
+                            <p className="font-semibold text-[15px]">Data Pemesan</p>
+                            <button className="text-grey">
+                                <FontAwesomeIcon icon={faChevronUp} className={`${collapseDataPemesan ? "rotate-0" : "rotate-180"} transition-transform duration-200`} />
+                            </button>
+                        </div>
+                        <div className={`px-5 pt-1 pb-5 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${collapseDataPemesan ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}>
+                            <div className="flex flex-col gap-4 border-t border-primary-light-200 pt-5">
+                                <div>
+                                    <label className="text-[13px] font-base text-grey block mb-[6px]">Nama Lengkap</label>
+                                    <input 
+                                        type="text" 
+                                        className="block w-full rounded-lg border border-primary-light-200 bg-white/5 py-2.5 px-3 text-[13px] text-dark focus:outline-none focus:border-primary-200" 
+                                        placeholder="Nama Lengkap"
+                                        value={namaPemesan}
+                                        onChange={(e) => setNamaPemesan(e.target.value)} 
                                     />
-                                </Stack>
-                            </DropdownComponent>
-
-                            <DropdownComponent title="Data Pemesan" icon="lucide:info" defaultOpened>
-                                <Stack>
-                                    <TextInput
-                                        label="Nama Pemesan"
-                                        placeholder="Masukan Nama Pemesan"
-                                        {...inputProps('nama_pemesan')}
+                                </div>
+                                <div>
+                                    <label className="text-[13px] font-base text-grey block mb-[6px]">Email</label>
+                                    <input 
+                                        type="email" 
+                                        className="block w-full rounded-lg border border-primary-light-200 bg-white/5 py-2.5 px-3 text-[13px] text-dark focus:outline-none focus:border-primary-200" 
+                                        placeholder="Contoh: example@example.com"
+                                        value={emailPemesan}
+                                        onChange={(e) => setEmailPemesan(e.target.value)}
                                     />
-                                    <TextInput
-                                        label="Email"
-                                        placeholder="Masukan Email Pemesan"
-                                        {...inputProps('email_pemesan')}
-                                    />
-                                    <TextInput
-                                        label="No. Telp Pemesan"
-                                        placeholder="Masukan No. Telp Pemesan"
-                                        {...inputProps('phone_pemesan')}
-                                    />
-                                    <Text size="xs" c="gray">*Pastikan data yang dimasukan sudah sesuai</Text>
-                                </Stack>
-                            </DropdownComponent>
-
-                            <DropdownComponent title="Detail Booking" icon="lucide:info" defaultOpened>
-                                <Stack>
-                                    <Flex justify="space-between" gap={20} align="center">
-                                        <Stack gap={0}>
-                                            <Text size="sm" c="gray">Venue</Text>
-                                            <Text>{venue?.name || '-'}</Text>
-                                        </Stack>
-                                        {venue?.venue_gallery?.[0]?.image_url && (
-                                            <Image 
-                                                src={venue.venue_gallery[0].image_url} 
-                                                bg="gray.1" 
-                                                radius={7} 
-                                                w={50} 
-                                                h={50} 
-                                                alt={venue.name}
-                                            />
-                                        )}
-                                    </Flex>
-                                    <Stack gap={0}>
-                                        <Text size="sm" c="gray">Lokasi</Text>
-                                        <Text>{venue?.location || '-'}</Text>
-                                    </Stack>
-                                    <Flex gap={10} className="[&>*]:!flex-grow" wrap="wrap">
-                                        <Stack gap={0}>
-    <Text size="sm" c="gray">Maks. Kapasitas</Text>
-    <Text>
-        {venue?.max_capacity?.toLocaleString('id-ID') || 0} Orang
-    </Text>
-</Stack>
-<Stack gap={0}>
-    <Text size="sm" c="gray">Jumlah Kursi</Text>
-    <Text>
-        {venue?.seat_capacity?.toLocaleString('id-ID') || 0} Kursi
-    </Text>
-</Stack>
-                                    </Flex>
-                                    <Flex justify="space-between" gap={20} align="center">
-                                        <Stack gap={0}>
-                                            <Text size="sm" c="gray">Tanggal Booking</Text>
-                                            {!onEditDate ? (
-                                                <Text>
-                                                    {fv?.start_date && fv?.end_date 
-                                                        ? `${moment(fv.start_date).format('DD MMM YYYY')} - ${moment(fv.end_date).format('DD MMM YYYY')}`
-                                                        : '-'
-                                                    }
-                                                </Text>
-                                            ) : (
-                                                <Flex gap={10} mt={5} wrap="wrap">
-                                                    <DateInput
-                                                        minDate={new Date()}
-                                                        maxDate={fv?.end_date ? new Date(fv.end_date) : undefined}
-                                                        value={fv?.start_date ? new Date(fv.start_date) : undefined}
-                                                        onChange={e => setFormValues({ start_date: e ? moment(e).format('YYYY-MM-DD') : '' })}
-                                                        valueFormat="DD MMMM YYYY"
-                                                        placeholder="Dari Tanggal"
-                                                        clearable
-                                                    />
-                                                    <DateInput
-                                                        minDate={fv?.start_date ? new Date(fv.start_date) : undefined}
-                                                        value={fv?.end_date ? new Date(fv.end_date) : undefined}
-                                                        onChange={e => setFormValues({ end_date: e ? moment(e).format('YYYY-MM-DD') : '' })}
-                                                        valueFormat="DD MMMM YYYY"
-                                                        placeholder="Sampai Tanggal"
-                                                        clearable
-                                                    />
-                                                </Flex>
-                                            )}
-                                        </Stack>
-                                        <Button onClick={() => setOnEditDate(!onEditDate)} variant="transparent" color="#194e9e">
-                                            {onEditDate ? 'Simpan' : 'Edit'}
-                                        </Button>
-                                    </Flex>
-                                </Stack>
-                            </DropdownComponent>
-
-                            <DropdownComponent title="Opsi Pembayaran" icon="hugeicons:money-04" defaultOpened>
-                                <Stack>
-                                    <Flex component="label" justify="space-between" align="center" gap={15} className="cursor-pointer">
-                                        <Stack gap={0}>
-                                            <Text>Pembayaran Penuh</Text>
-                                            <Text maw={400} c="gray">
-                                                Bayar Total (<NumberFormatter value={Math.round(venue?.starting_price ?? 0)} thousandSeparator="." />) sekarang.
-                                            </Text>
-                                        </Stack>
-                                        <Checkbox 
-                                            checked={paymentOption == 'all'} 
-                                            onChange={() => setPaymentOption('all')}
+                                </div>
+                                <div>
+                                    <label className="text-[13px] font-base text-grey block mb-[6px]">No Telepon</label>
+                                    <div className="flex gap-2 items-center">
+                                        <select className="bg-gray-50 border border-primary-light text-dark text-[13px] rounded-lg block w-[80px] py-2.5 px-2 focus:outline-none focus:border-primary-200 h-full">
+                                            <option value="+62">+62</option>
+                                        </select>
+                                        <input 
+                                            type="tel" 
+                                            className="flex-1 block w-full rounded-lg border border-primary-light-200 bg-white/5 py-2.5 px-3 text-[13px] text-dark focus:outline-none focus:border-primary-200" 
+                                            placeholder="Contoh: 81234567890" 
+                                            value={phonePemesan}
+                                            maxLength={13}
+                                            onChange={(e) => setPhonePemesan(e.target.value.replace(/\D/g, ''))}
                                         />
-                                    </Flex>
-                                    
-                                    {(venue?.minimum_price ?? 0) > 0 && (
-                                        <>
-                                            <Divider />
-                                            <Flex component="label" justify="space-between" align="center" gap={15} className="cursor-pointer">
-                                                <Stack gap={0}>
-                                                    <Text>Bayar Sebagian</Text>
-                                                    <Text maw={400} c="gray">
-                                                        Bayar sebagian (<NumberFormatter value={Math.round(venue?.minimum_price ?? 0)} thousandSeparator="." />) sekarang. 
-                                                        Lakukan pelunasan sebelum tanggal {moment(orderData?.date_start).format('DD MMMM YYYY')}.
-                                                    </Text>
-                                                </Stack>
-                                                <Checkbox 
-                                                    checked={paymentOption == 'divide'} 
-                                                    onChange={() => setPaymentOption('divide')}
-                                                />
-                                            </Flex>
-                                        </>
-                                    )}
-                                </Stack>
-                            </DropdownComponent>
-                        </Stack>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                        <Stack gap={10} className="!flex-grow md:!max-w-[400px]">
-                            <Card withBorder radius={10} p={20}>
-                                <Stack gap={20}>
-                                    <Flex gap={10} align="center">
-                                        <Icon icon="lucide:info" className="text-primary-base text-[20px]"/>
-                                        <Text fw={600}>Detail Pembayaran</Text>
-                                    </Flex>
+                    {/* JADWAL YANG DIPILIH CARD */}
+                    <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
+                        <div className="border-b border-primary-light-200 px-5 py-4 flex items-center justify-between">
+                            <p className="font-semibold text-[15px]">Jadwal yang Dipilih</p>
+                            {checkoutSlots.length > 0 && (
+                                <button className="text-red-500 text-[12px] font-semibold hover:text-red-600 transition-colors" onClick={handleDeleteAll}>
+                                    Hapus Semua
+                                </button>
+                            )}
+                        </div>
 
-                                    <Stack>
-                                        {orderSummary.array.map(([label, value], i) => (
-                                            <Flex justify="space-between" key={i}>
-                                                <Text fw={label === "Total Pembayaran" ? 600 : 400}>{label}</Text>
-                                                <Text fw={label === "Total Pembayaran" ? 600 : 400}>
-                                                    {/* Perbaikan: Menggunakan thousandSeparator string dan tidak menggunakan decimalSeparator */}
-                                                    <NumberFormatter value={value} prefix="Rp " thousandSeparator="." />
-                                                </Text>
-                                            </Flex>
-                                        ))}
-                                    </Stack>
-                                </Stack>
-                            </Card>
-                        </Stack>
-                    </Flex>
-                </Stack>
+                        {checkoutSlots.length > 0 ? (
+                            <div className={`${checkoutSlots.length > 4 ? 'max-h-[350px] overflow-y-auto custom-scrollbar' : ''}`}>
+                                {checkoutSlots.map((slot, idx) => (
+                                    <div key={idx} className="border-b border-primary-light-200 py-4 px-5 flex flex-col gap-3">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex items-center gap-3">
+                                                <div className="px-2 py-1 flex items-center justify-center border rounded-md border-primary-light h-[36px] bg-gray-50 shrink-0">
+                                                    <Icon icon="mdi:calendar-clock-outline" className="text-[#194e9e] text-[20px]" />
+                                                </div>
+                                                <div className="flex flex-col gap-0.5">
+                                                    <p className="font-semibold text-[13px]">Lapangan 0{slot.court} | {slot.date}</p>
+                                                    <p className="text-[12px] text-grey">Sewa 1 Jam (Pukul {slot.time} WIB) x Rp {basePrice.toLocaleString('id-ID')}</p>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => handleDeleteSlot(idx)} 
+                                                className="text-gray-400 hover:text-red-500 transition-colors bg-gray-50 hover:bg-red-50 p-1.5 rounded-full"
+                                                title="Hapus Jadwal"
+                                            >
+                                                <Icon icon="ic:round-close" className="text-[18px]" />
+                                            </button>
+                                        </div>
+                                        <div className="mt-1">
+                                            <input 
+                                                type="text" 
+                                                className="block w-full rounded-md border border-primary-light-200 bg-gray-50 py-2 px-3 text-[12px] text-dark focus:outline-none focus:border-primary-300 transition-colors" 
+                                                placeholder="Catatan tambahan (Opsional)"
+                                                value={slot.note}
+                                                onChange={(e) => handleNoteChange(idx, e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-12 px-5 text-center flex flex-col items-center justify-center text-grey">
+                                <Icon icon="mdi:calendar-blank-outline" className="text-4xl text-gray-300 mb-2" />
+                                <p className="text-[13px]">Belum ada jadwal yang dipilih.</p>
+                                <button className="mt-4 text-[#194e9e] text-[13px] font-medium border border-[#194e9e] px-4 py-1.5 rounded-full hover:bg-blue-50 transition-colors" onClick={() => router.push('/venue')}>
+                                    Cari Jadwal
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
 
-                <Card pos="fixed" className="bottom-0 left-0 w-[100vw] border-t !border-primary-light" py={10} withBorder>
-                    <Container size="lg" w="100%">
-                        <Flex justify="end" w="100%">
-                            <Button
-                                loading={loading.includes('submit')}
-                                onClick={handleCheckout}
-                                className="uppercase"
-                                color="#194E9E"
-                                rightSection={<Icon icon="uiw:check" />}
-                                radius="xl">
-                                Proses Pembayaran
-                            </Button>
-                        </Flex>
-                    </Container>
-                </Card>
-            </Container>
+                {/* RIGHT COLUMN: Summary & Vouchers */}
+                <div className="col-span-2 flex flex-col gap-4 mt-6 md:mt-0">
+                    
+                    {/* Event Detail Card */}
+                    <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm p-4 flex items-center gap-4">
+                        <div className="border rounded-md border-primary-light flex-shrink-0 overflow-hidden">
+                            {venueDetail?.creator?.image_url || venueDetail?.creator?.image ? (
+                                <img src={venueDetail?.creator?.image_url || venueDetail?.creator?.image} alt="Creator Logo" className="w-[45px] h-[45px] object-cover" />
+                            ) : venueDetail?.venue_gallery?.[0]?.image_url ? (
+                                <img src={venueDetail?.venue_gallery[0].image_url} alt="Venue Logo Fallback" className="w-[45px] h-[45px] object-cover" />
+                            ) : (
+                                <div className="w-[45px] h-[45px] bg-gray-200" />
+                            )}
+                        </div>
+                        <div>
+                            <p className="text-[14px] font-semibold mb-1 leading-tight">{venueDetail?.creator?.name || venueDetail?.has_creator?.name || "Nama Kreator"}</p>
+                            <p className="text-[12px] text-grey">{venueDetail?.name || "Nama Venue"}</p>
+                        </div>
+                    </div>
+
+                    {/* Voucher Section */}
+                    <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm p-5 space-y-4">
+                        <div className="flex items-center gap-2">
+                            <Icon icon="mdi:ticket-percent-outline" className="text-[#194E9E] text-[20px]" />
+                            <h3 className="font-semibold text-[15px]">Voucher</h3>
+                        </div>
+                        <div className="flex gap-2 items-center w-full">
+                            <input 
+                                type="text" 
+                                className="border border-primary-light-200 text-sm py-2 px-3 flex-1 rounded-lg focus:outline-none" 
+                                placeholder="Masukan Kode Voucher 1" 
+                            />
+                        </div>
+                        <div>
+                            <button className="bg-gray-100/80 text-gray-400 text-[12px] px-6 py-1.5 rounded-full font-medium" disabled>Submit</button>
+                        </div>
+                        <button className="w-full border border-[#194e9e] text-[#194e9e] text-[13px] py-1.5 rounded-full font-semibold mt-1 hover:bg-blue-50 transition-colors">
+                            + Tambah Voucher
+                        </button>
+                    </div>
+
+                    {/* Ringkasan Pesanan Section */}
+                    <div className="border border-primary-light-200 rounded-lg bg-white shadow-sm">
+                        <div className="border-b border-b-primary-light-200 p-4">
+                            <p className="font-semibold text-[15px]">Ringkasan Pesanan</p>
+                        </div>
+
+                        <div className={`${checkoutSlots.length > 4 ? 'max-h-[350px] overflow-y-auto custom-scrollbar' : ''}`}>
+                            {checkoutSlots.map((slot, idx) => (
+                                <div key={idx} className="border-b px-5 py-4 border-primary-light-200 flex gap-4">
+                                    <div className="px-3 flex items-center justify-center border rounded-md border-primary-light h-[36px] mt-1 shrink-0 bg-gray-50">
+                                        <Icon icon="mdi:calendar-clock-outline" className="text-[#194e9e] text-[22px]" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-[14px] mb-1 font-semibold">{slot.date} | Lapangan 0{slot.court}</p>
+                                        <p className="text-[12px] text-grey">Sewa 1 Jam (Pukul {slot.time} WIB) x Rp {basePrice} = Rp {basePrice.toLocaleString('id-ID')}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="py-2.5 px-5 flex justify-between items-center text-[13px] mt-3">
+                            <p className="text-dark">Jumlah ({displayTotalCount} Slot)</p>
+                            <p className="font-semibold text-dark">Rp {subtotal.toLocaleString('id-ID')}</p>
+                        </div>
+                        <div className="py-2.5 px-5 flex justify-between items-center text-[13px]">
+                            <p className="text-dark">Subtotal</p>
+                            <p className="font-semibold text-dark">Rp {subtotal.toLocaleString('id-ID')}</p>
+                        </div>
+                        <div className="py-2.5 px-5 flex justify-between items-center text-[13px]">
+                            <p className="text-dark">Biaya Admin</p>
+                            <p className="font-semibold text-dark">Rp {adminFee.toLocaleString('id-ID')}</p>
+                        </div>
+                        
+                        <div className="py-4 px-5 flex justify-between items-center mt-2 border-t border-primary-light">
+                            <p className="font-medium text-dark text-[14px]">Total Pembayaran</p>
+                            <p className="font-bold text-dark text-[16px]">Rp {grandtotal.toLocaleString('id-ID')}</p>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+
+            {/* STICKY BOTTOM BAR */}
+            <div className="w-full fixed gap-3 bottom-0 bg-white border-t border-t-primary-light-200 z-50 p-4 px-4 md:px-2 lg:px-0">
+                <div className="max-w-5xl mx-auto flex md:flex-row flex-col justify-between md:gap-0 gap-3 items-center">
+                    
+                    {/* Red Pill Notification / Countdown */}
+                    <div className="hidden lg:flex items-center justify-center gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2 rounded-md">
+                        <Countdown date={countdownTarget} renderer={renderer} />
+                        <div className="w-[1px] mx-1 md:mx-0 h-4 bg-white/60"></div>
+                        <p className="text-xs">Segera selesaikan pesananmu</p>
+                    </div>
+                    
+                    {/* For Mobile Red Pill */}
+                    <div className="flex lg:hidden md:hidden justify-center items-center fixed top-16 right-0 left-0 gap-0 md:gap-3 bg-[#EA4D3E] text-white px-3 py-2 z-40 shadow-sm">
+                        <Countdown date={countdownTarget} renderer={renderer} />
+                        <div className="w-[1px] mx-1 md:mx-0 h-4 bg-white/60"></div>
+                        <p className="text-xs">Segera selesaikan pesananmu</p>
+                    </div>
+
+                    <button 
+                        disabled={!isFormValid || loading}
+                        className={`font-semibold text-white px-10 py-[9px] rounded-full text-[14px] transition-all transition-colors w-full md:w-[160px] flex items-center justify-center
+                            ${isFormValid && !loading 
+                                ? 'bg-[#5981C5] hover:bg-[#466EA8]' 
+                                : 'bg-[#5981C5]/70 opacity-70 cursor-not-allowed'}`}
+                        onClick={submitForm}
+                    >
+                        {loading ? <span className="animate-pulse">Loading...</span> : "Selanjutnya"}
+                    </button>
+                    
+                </div>
+            </div>
         </div>
     );
 }
-
-const DropdownComponent = ({ defaultOpened, children, title, icon }: PropsWithChildren<{ defaultOpened?: boolean, title: string, icon: string }>) => {
-    const [opened, setOpened] = useState<boolean>(defaultOpened ?? false);
-
-    return (
-        <Card bg="white" radius={10} withBorder>
-            <Stack>
-                <Flex justify="space-between" align="center" gap={20} onClick={() => setOpened(!opened)} className="cursor-pointer">
-                    <Flex align="center" gap={10}>
-                        <Icon icon={icon} className="text-[20px] text-[#194E9E]" />
-                        <Text>{title}</Text>
-                    </Flex>
-
-                    <ActionIcon variant="transparent" c="gray">
-                        <Icon icon="uiw:down" className={`transition-transform ${opened ? 'rotate-180' : ''}`}/>
-                    </ActionIcon>
-                </Flex>
-
-                {opened && (
-                    <Stack p={5}>
-                        <Divider />
-                        {children}
-                    </Stack>
-                )}
-            </Stack>
-        </Card>
-    );
-};
