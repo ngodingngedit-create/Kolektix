@@ -102,6 +102,18 @@ const PilihJadwal = () => {
     const [filterSport, setFilterSport] = useState<string[]>([]);
     const calendarRef = React.useRef<HTMLDivElement>(null);
     const filterRef = React.useRef<HTMLDivElement>(null);
+    const [isMobile, setIsMobile] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    // Detect mobile on mount and resize
+    useEffect(() => {
+        setMounted(true);
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
 
     // Court/Schedule state
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -302,7 +314,7 @@ const PilihJadwal = () => {
         <>
 
             {/* PAGE BODY – Dark Blue Hero like Screenshot */}
-            <div className="min-h-screen bg-[#F7F8FA]">
+            <div className="min-h-screen bg-[#F7F8FA] overflow-x-hidden">
                 <div ref={clickOutsideChat} className={`${openChat ? '' : 'hidden'}`}>
                     <Chat toggleOpenTab={() => setOpenChat(!openChat)} openTab={openChat} creatorIdOpen={data?.creator_id} />
                     <AuthModal visible={openChat && !user?.id} onClose={() => setOpenChat(false)} />
@@ -315,7 +327,7 @@ const PilihJadwal = () => {
                         <div className="hidden md:flex flex-col md:flex-row md:items-end justify-between mb-4 md:mb-6 gap-3">
                             <div className="flex flex-col">
                                 <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">Venue Olahraga</span>
-                                <h1 className="text-white text-lg md:text-3xl font-black tracking-tight leading-tight uppercase">
+                                <h1 className="text-white text-[20px] md:text-[24px] font-black tracking-tight leading-tight uppercase">
                                     {data?.name || 'Loading Venue...'}
                                 </h1>
                             </div>
@@ -323,68 +335,84 @@ const PilihJadwal = () => {
 
                         {/* Main Grid: Image (Left) + Details Card (Right) */}
                         <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-stretch">
-                            {/* LEFT – Photo Collage */}
-                            <div className="relative group rounded-[24px] overflow-hidden shadow-2xl flex-[2.2] border border-white/10 bg-white/5 h-[200px] md:h-[320px]">
-                                <div className="flex gap-1 h-[200px] md:h-[320px]">
-                                    {/* Main large image */}
-                                    <div className="relative flex-[1.6] overflow-hidden">
-                                        <div className="absolute inset-0">
-                                            <ImageM
-                                                src={data?.venue_gallery?.[0]?.image_url || ''}
-                                                h="100%" w="100%" fit="cover"
-                                                className="transition-transform duration-500 hover:scale-105 cursor-pointer"
-                                                onClick={() => { setGalleryActiveIdx(0); setShowGallery(true); }}
-                                            />
-                                        </div>
-                                    </div>
-                                    {/* Right 2x2 grid */}
-                                    <div className="flex flex-col gap-1 flex-1">
-                                        <div className="flex gap-1 flex-1 min-h-0">
-                                            <div className="relative flex-1 overflow-hidden">
-                                                <div className="absolute inset-0">
-                                                    <ImageM src={data?.venue_gallery?.[1]?.image_url || data?.venue_gallery?.[0]?.image_url || ''} h="100%" w="100%" fit="cover" className="transition-transform duration-500 hover:scale-105 cursor-pointer" onClick={() => { setGalleryActiveIdx(1); setShowGallery(true); }} />
-                                                </div>
-                                            </div>
-                                            <div className="relative flex-1 overflow-hidden">
-                                                <div className="absolute inset-0">
-                                                    <ImageM src={data?.venue_gallery?.[2]?.image_url || data?.venue_gallery?.[0]?.image_url || ''} h="100%" w="100%" fit="cover" className="transition-transform duration-500 hover:scale-105 cursor-pointer" onClick={() => { setGalleryActiveIdx(2); setShowGallery(true); }} />
-                                                </div>
+                            {/* LEFT – Photo Collage & Social */}
+                            <div className="flex-[2.2] flex flex-col gap-3">
+                                <div className="relative group rounded-[24px] overflow-hidden shadow-2xl border border-white/10 bg-white/5 h-[200px] md:h-[320px] shrink-0">
+                                    <div className="flex gap-1 h-[200px] md:h-[320px]">
+                                        {/* Main large image */}
+                                        <div className="relative flex-[1.6] overflow-hidden">
+                                            <div className="absolute inset-0">
+                                                <ImageM
+                                                    src={data?.venue_gallery?.[0]?.image_url || ''}
+                                                    h="100%" w="100%" fit="cover"
+                                                    className="transition-transform duration-500 hover:scale-105 cursor-pointer"
+                                                    onClick={() => { setGalleryActiveIdx(0); setShowGallery(true); }}
+                                                />
                                             </div>
                                         </div>
-                                        <div className="flex gap-1 flex-1 min-h-0">
-                                            <div className="relative flex-1 overflow-hidden">
-                                                <div className="absolute inset-0">
-                                                    <ImageM src={data?.creator?.image_url || data?.venue_gallery?.[0]?.image_url || ''} h="100%" w="100%" fit="cover" className="transition-transform duration-500 hover:scale-105 cursor-pointer" onClick={() => { setGalleryActiveIdx(3); setShowGallery(true); }} />
+                                        {/* Right 2x2 grid */}
+                                        <div className="flex flex-col gap-1 flex-1">
+                                            <div className="flex gap-1 flex-1 min-h-0">
+                                                <div className="relative flex-1 overflow-hidden">
+                                                    <div className="absolute inset-0">
+                                                        <ImageM src={data?.venue_gallery?.[1]?.image_url || data?.venue_gallery?.[0]?.image_url || ''} h="100%" w="100%" fit="cover" className="transition-transform duration-500 hover:scale-105 cursor-pointer" onClick={() => { setGalleryActiveIdx(1); setShowGallery(true); }} />
+                                                    </div>
+                                                </div>
+                                                <div className="relative flex-1 overflow-hidden">
+                                                    <div className="absolute inset-0">
+                                                        <ImageM src={data?.venue_gallery?.[2]?.image_url || data?.venue_gallery?.[0]?.image_url || ''} h="100%" w="100%" fit="cover" className="transition-transform duration-500 hover:scale-105 cursor-pointer" onClick={() => { setGalleryActiveIdx(2); setShowGallery(true); }} />
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="relative group/photo flex-1 overflow-hidden">
-                                                <div className="absolute inset-0">
-                                                    <ImageM src={data?.venue_gallery?.[3]?.image_url || data?.venue_gallery?.[0]?.image_url || ''} h="100%" w="100%" fit="cover" className="transition-transform duration-500 hover:scale-105 group-hover/photo:brightness-[0.7] cursor-pointer" onClick={() => { setGalleryActiveIdx(0); setShowGallery(true); }} />
-                                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover/photo:opacity-100 transition-opacity duration-300">
-                                                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-black/50 backdrop-blur-md rounded-full border border-white/20">
-                                                            <Icon icon="solar:gallery-wide-bold" className="text-white text-[14px]" />
-                                                            <span className="text-white text-[11px] font-bold tracking-wide">Lihat Foto</span>
+                                            <div className="flex gap-1 flex-1 min-h-0">
+                                                <div className="relative flex-1 overflow-hidden">
+                                                    <div className="absolute inset-0">
+                                                        <ImageM src={data?.creator?.image_url || data?.venue_gallery?.[0]?.image_url || ''} h="100%" w="100%" fit="cover" className="transition-transform duration-500 hover:scale-105 cursor-pointer" onClick={() => { setGalleryActiveIdx(3); setShowGallery(true); }} />
+                                                    </div>
+                                                </div>
+                                                <div className="relative group/photo flex-1 overflow-hidden">
+                                                    <div className="absolute inset-0">
+                                                        <ImageM src={data?.venue_gallery?.[3]?.image_url || data?.venue_gallery?.[0]?.image_url || ''} h="100%" w="100%" fit="cover" className="transition-transform duration-500 hover:scale-105 group-hover/photo:brightness-[0.7] cursor-pointer" onClick={() => { setGalleryActiveIdx(0); setShowGallery(true); }} />
+                                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover/photo:opacity-100 transition-opacity duration-300">
+                                                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-black/50 backdrop-blur-md rounded-full border border-white/20">
+                                                                <Icon icon="solar:gallery-wide-bold" className="text-white text-[14px]" />
+                                                                <span className="text-white text-[11px] font-bold tracking-wide">Lihat Foto</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+                                    {/* Floating see all photos button */}
+                                    <button
+                                        onClick={() => { setGalleryActiveIdx(0); setShowGallery(true); }}
+                                        className="absolute bottom-4 right-4 md:bottom-6 md:right-6 z-20 flex items-center gap-2 px-4 py-2.5 rounded-2xl hover:scale-105 transition-all"
+                                        style={{ background: 'white', boxShadow: '0 8px 30px rgba(0,0,0,0.18)', outline: '1px solid #e2e8f0' }}
+                                    >
+                                        <Icon icon="solar:gallery-minimalistic-bold" style={{ color: '#194e9e', fontSize: '16px' }} />
+                                        <span style={{ color: '#0f172a', fontSize: '12px', fontWeight: 900 }}>Lihat semua {galleryImages.length} foto</span>
+                                    </button>
                                 </div>
-                                {/* Floating see all photos button */}
-                                <button
-                                    onClick={() => { setGalleryActiveIdx(0); setShowGallery(true); }}
-                                    className="absolute bottom-4 right-4 md:bottom-6 md:right-6 z-20 flex items-center gap-2 px-4 py-2.5 rounded-2xl hover:scale-105 transition-all"
-                                    style={{ background: 'white', boxShadow: '0 8px 30px rgba(0,0,0,0.18)', outline: '1px solid #e2e8f0' }}
-                                >
-                                    <Icon icon="solar:gallery-minimalistic-bold" style={{ color: '#194e9e', fontSize: '16px' }} />
-                                    <span style={{ color: '#0f172a', fontSize: '12px', fontWeight: 900 }}>Lihat semua {galleryImages.length} foto</span>
-                                </button>
+
+                                {/* Social / Action Buttons */}
+                                <div className="flex items-center justify-between mt-1 mb-2 md:mb-0 px-1 md:px-0">
+                                    <button className="flex items-center gap-2.5 px-4 py-2.5">
+                                        <Icon icon="mdi:instagram" className="text-white text-[18px]" />
+                                        <span className="text-white text-[13px] tracking-wide">
+                                            {data?.creator?.name ? data.creator.name.toLowerCase().replace(/\s+/g, '') : 'venue_official'}
+                                        </span>
+                                    </button>
+
+                                    <button className="flex items-center justify-center w-10 h-10">
+                                        <Icon icon="solar:share-bold" className="text-white text-[18px]" />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* MOBILE HERO DETAILS (Hidden on Desktop) */}
                             <div className="flex flex-col md:hidden mt-2 gap-4 pb-2">
-                                <h1 className="text-[22px] font-black text-white leading-tight uppercase tracking-tight">
+                                <h1 className="text-[18px] font-black text-white leading-tight uppercase tracking-tight">
                                     {data?.name || 'Loading Venue...'}
                                 </h1>
 
@@ -393,7 +421,7 @@ const PilihJadwal = () => {
                                         <Icon icon="solar:wallet-bold-duotone" className="text-white/60 text-[20px] shrink-0" />
                                         <div className="flex items-baseline gap-1.5 flex-1 border-b border-white/10 pb-3">
                                             <span className="text-[14px] font-bold text-white/70 uppercase tracking-wide">Mulai Dari</span>
-                                            <span className="text-[18px] font-black text-white pl-1">Rp{(data?.starting_price ?? 95000).toLocaleString('id')}</span>
+                                            <span className="text-[16px] font-black text-white pl-1">Rp{(data?.starting_price ?? 95000).toLocaleString('id')}</span>
                                             <span className="text-[12px] font-medium text-white/50">/ sesi</span>
                                         </div>
                                     </div>
@@ -429,24 +457,24 @@ const PilihJadwal = () => {
                             </div>
 
                             {/* RIGHT – Harga Mulai Dari + Kreator + Buttons */}
-                            <div className="hidden md:flex flex-1 shrink-0 flex-col gap-4">
+                            <div className="hidden md:flex flex-1 shrink-0 flex-col gap-2">
                                 <div className="bg-white rounded-[28px] shadow-2xl overflow-hidden flex flex-col border border-[#d1d1d1] h-full md:h-[320px]" style={{ color: '#0f172a' }}>
                                     {/* HARGA WIDGET */}
                                     <div className="bg-gradient-to-br from-[#f8fafc] to-[#f1f5f9] px-6 py-4 md:py-5 border-b border-[#d1d1d1] flex-1 flex flex-col justify-center">
                                         <p style={{ color: '#64748b' }} className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">HARGA MULAI DARI</p>
                                         <div className="flex items-baseline gap-1.5">
-                                            <span style={{ color: '#0f172a' }} className="text-[28px] md:text-[32px] font-black leading-none tracking-tighter">
+                                            <span style={{ color: '#0f172a' }} className="text-[24px] md:text-[28px] font-black leading-none tracking-tighter">
                                                 Rp{(data?.starting_price ?? 95000).toLocaleString('id')}
                                             </span>
-                                            <span style={{ color: '#64748b' }} className="text-[14px] font-bold">/ sesi</span>
+                                            <span style={{ color: '#64748b' }} className="text-[12px] font-bold">/ sesi</span>
                                         </div>
                                     </div>
 
                                     {/* Creator Section */}
                                     <div className="px-6 py-3.5 flex flex-col gap-2.5 shrink-0" style={{ color: '#0f172a' }}>
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: '#64748b' }}>Penyelenggara</span>
-                                        <div className="flex items-center gap-3 bg-gray-50 p-1.5 rounded-2xl border border-gray-100">
-                                            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm bg-gray-200 shrink-0 flex items-center justify-center">
+                                        <div className="flex items-center gap-3 bg-gray-50 p-1.5 rounded-2xl">
+                                            <div className="w-10 h-10 rounded-full overflow-hidden shadow-sm bg-gray-200 shrink-0 flex items-center justify-center">
                                                 {data?.creator?.image_url ? (
                                                     <img src={data.creator.image_url} alt={data.creator.name || ''} className="w-full h-full object-cover" />
                                                 ) : (
@@ -862,7 +890,7 @@ const PilihJadwal = () => {
                 <div ref={sectionRefs.lokasi} className="pb-2 bg-[#F7F8FA]"></div>
             </div>{/* end min-h-screen */}
             {/* ── BOTTOM BOOKING BAR – Only Visible when scrolling past hero ── */}
-            <div className={`w-full fixed flex items-center justify-between gap-3 sm:gap-4 bottom-0 bg-white z-50 py-3 sm:py-4 px-4 sm:px-6 md:px-12 shadow-[0_-15px_40px_rgba(0,0,0,0.08)] border-t border-[#d1d1d1] transition-all duration-500 ${subNavSticky ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+            <div className={`w-full fixed flex items-center justify-between gap-3 sm:gap-4 bottom-0 bg-white z-50 py-3 sm:py-4 px-4 sm:px-6 md:px-12 shadow-[0_-15px_40px_rgba(0,0,0,0.08)] border-t border-[#dbdbdb] transition-all duration-500 ${subNavSticky ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
                 }`}>
                 {/* Left: price info */}
                 <div className="flex items-center gap-3 min-w-0 pr-2">
@@ -1049,7 +1077,7 @@ const PilihJadwal = () => {
                         onClick={() => setShowGallery(false)}
                         className="absolute top-4 right-5 z-10 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-all"
                     >
-                        <Icon icon="solar:close-bold" className="text-[20px]" />
+                        <Icon icon="mdi:close" className="text-[24px]" />
                     </button>
                     {/* Main Image */}
                     <div className="flex-1 flex items-center justify-center relative px-16">
@@ -1090,23 +1118,52 @@ const PilihJadwal = () => {
                 </div>
             )}
 
-            {/* ── DETAIL & ATURAN MODAL ── */}
+            {/* ── TENTANG VENUE MODAL ── */}
             <Modal
                 opened={showDetailModal}
                 onClose={() => setShowDetailModal(false)}
-                title={<Text fw={900} className="uppercase tracking-[0.1em] text-primary-base">Detail & Aturan Venue</Text>}
+                title={<Text fw={700} className="text-[20px] text-gray-900 tracking-tight">Tentang Venue</Text>}
                 centered
-                size="700px"
-                radius="24px"
+                size="600px"
+                radius={isMobile ? 0 : 16}
+                fullScreen={isMobile}
+                withCloseButton
+                closeButtonProps={{ iconSize: 24, className: "text-gray-900 hover:bg-gray-100" }}
                 styles={{
-                    content: { overflow: 'hidden' },
-                    body: { padding: '24px' }
+                    inner: isMobile ? { padding: '0 !important' } : undefined,
+                    content: { boxShadow: isMobile ? 'none' : '0 10px 40px -10px rgba(0, 0, 0, 0.2)' },
+                    header: { padding: '24px 24px 16px 24px' },
+                    title: { width: '100%' },
+                    body: { padding: '0px 24px 32px 24px' }
                 }}
             >
-                <div className="flex flex-col gap-6">
+                <div className={`flex flex-col gap-6 overflow-y-auto stylish-scrollbar pr-2 mt-2 ${isMobile ? 'flex-1 h-full' : 'max-h-[75vh]'}`}>
+                    
+                    {/* DESKRIPSI */}
                     <div>
-                        <Text fw={900} className="text-lg text-gray-900 mb-3">Fasilitas Venue</Text>
-                        <div className="grid grid-cols-2 gap-3">
+                        <h3 className="text-[16px] font-bold text-gray-900 mb-3">Deskripsi</h3>
+                        <p className="text-[14px] text-gray-700 leading-relaxed text-justify whitespace-pre-line">
+                            {data?.description || 'Tidak ada deskripsi tersedia.'}
+                        </p>
+                    </div>
+
+                    {/* ATURAN VENUE */}
+                    <div>
+                        <h3 className="text-[16px] font-bold text-gray-900 mb-3">Aturan Venue</h3>
+                        <ol className="list-decimal pl-4 space-y-2.5 text-[14px] text-gray-700 mt-1">
+                            <li>Gunakan sepatu olahraga indoor yang bersih saat di lapangan</li>
+                            <li>Jaga kebersihan area lapangan ruang olahraga</li>
+                            <li>Harap datang 15 menit sebelum jadwal dimulai</li>
+                            <li>Dilarang merokok, membawa minuman keras, atau obat-obatan terlarang</li>
+                            <li>Perubahan jadwal maksimal dilakukan 24 jam sebelumnya</li>
+                            <li>Lapangan hanya digunakan sesuai dengan aktivitas yang dipesan</li>
+                        </ol>
+                    </div>
+
+                    {/* FASILITAS VENUE */}
+                    <div>
+                        <h3 className="text-[16px] font-bold text-gray-900 mb-3 mt-1">Fasilitas</h3>
+                        <div className="flex flex-col gap-3">
                             {data?.facility?.map((f, i) => {
                                 const facilityIcons: Record<string, string> = {
                                     'DP': 'solar:card-bold', 'Down Payment': 'solar:card-bold',
@@ -1118,50 +1175,14 @@ const PilihJadwal = () => {
                                 };
                                 const icon = Object.keys(facilityIcons).find(k => f.toLowerCase().includes(k.toLowerCase()));
                                 return (
-                                    <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                                        <Icon icon={icon ? facilityIcons[icon] : 'solar:check-circle-bold'} className="text-primary-base text-lg" />
-                                        <Text size="sm" fw={700} className="text-gray-700">{f}</Text>
+                                    <div key={i} className="flex items-center gap-4 w-full">
+                                        <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gray-100">
+                                            <Icon icon={icon ? facilityIcons[icon] : 'solar:check-circle-bold'} className="text-gray-600 text-[18px]" />
+                                        </div>
+                                        <span className="text-[14px] font-medium text-gray-700">{f}</span>
                                     </div>
                                 );
                             })}
-                        </div>
-                    </div>
-
-                    <div className="h-px bg-black/5"></div>
-
-                    <div>
-                        <Text fw={900} className="text-lg text-gray-900 mb-3">Aturan Main</Text>
-                        <Stack gap={10}>
-                            {[
-                                { text: 'Gunakan sepatu olahraga indoor yang bersih', icon: 'solar:running-bold' },
-                                { text: 'Dilarang merokok di area lapangan', icon: 'solar:forbidden-circle-bold' },
-                                { text: 'Harap datang 15 menit sebelum jadwal dimulai', icon: 'solar:clock-circle-bold' },
-                                { text: 'Menjaga kebersihan dan ketertiban area', icon: 'solar:trash-bin-minimalistic-bold' },
-                                { text: 'Perubahan jadwal maksimal 24 jam sebelumnya', icon: 'solar:calendar-date-bold' },
-                            ].map((rule, i) => (
-                                <div key={i} className="flex gap-3 items-start">
-                                    <Icon icon={rule.icon} className="text-orange-400 text-[18px] mt-0.5 shrink-0" />
-                                    <Text size="sm" fw={600} className="text-gray-600">{rule.text}</Text>
-                                </div>
-                            ))}
-                        </Stack>
-                    </div>
-
-                    <div className="h-px bg-black/5"></div>
-
-                    <div>
-                        <Text fw={900} className="text-lg text-gray-900 mb-3">Lokasi Strategis</Text>
-                        <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <Icon icon="solar:map-point-bold" className="text-primary-base text-lg" />
-                                <Text size="sm" fw={700} className="text-gray-700 line-clamp-1">{data?.location}</Text>
-                            </div>
-                            <button
-                                onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(data?.location || '')}`, '_blank')}
-                                className="px-4 py-2 bg-white rounded-xl border border-blue-200 text-primary-base text-xs font-black shadow-sm"
-                            >
-                                GOOGLE MAPS
-                            </button>
                         </div>
                     </div>
                 </div>

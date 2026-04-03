@@ -87,6 +87,7 @@ const VenueDetail = () => {
         lokasi: React.useRef<HTMLDivElement>(null),
     };
     const [showDetailModal, setShowDetailModal] = useState(false);
+    const [showReviewModal, setShowReviewModal] = useState(false);
     const [showGallery, setShowGallery] = useState(false);
     const [galleryActiveIdx, setGalleryActiveIdx] = useState(0);
     const [activeSection, setActiveSection] = useState('info');
@@ -100,7 +101,6 @@ const VenueDetail = () => {
     const filterRef = React.useRef<HTMLDivElement>(null);
     const [isMobile, setIsMobile] = useState(false);
     const [mounted, setMounted] = useState(false);
-    const [showReviewModal, setShowReviewModal] = useState(false);
     const [reviewInput, setReviewInput] = useState("");
     const [reviewStars, setReviewStars] = useState(0);
 
@@ -592,60 +592,60 @@ const VenueDetail = () => {
 
                             <div className="h-px bg-black/5 -mx-6 my-2"></div>
 
-                            {/* Pilih Lapangan section dipindah ke page berbeda */}
-
-                            <div ref={sectionRefs.ulasan} className="mt-8 bg-white rounded-[24px] p-6 md:p-8 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.08)] border border-[#e5e7eb]">
-                                {/* Section header */}
-                                <div className="flex items-center justify-between mb-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#194e9e] text-white text-[14px] font-black shrink-0">
-                                            <Icon icon="solar:star-bold" className="text-white text-[16px]" />
-                                        </div>
-                                        <h3 className="text-[18px] font-black text-gray-900 tracking-tight uppercase">Ulasan Pengunjung</h3>
+                            <div ref={sectionRefs.ulasan} className="mt-8 px-4 md:px-0">
+                                {/* Title outside the card */}
+                                <div className="flex items-center gap-2.5 mb-4 px-1 md:px-2">
+                                    <div className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 rounded-[10px] md:rounded-xl bg-[#194e9e] text-white shrink-0">
+                                        <Icon icon="solar:star-bold" className="text-white text-[13px] md:text-[14px]" />
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <button onClick={() => setShowReviewModal(true)} className="px-4 py-2 bg-[#194e9e] text-white text-[11px] md:text-[12px] font-black uppercase tracking-widest rounded-xl hover:bg-[#123e80] shadow-md shadow-[#194e9e]/10 transition-all shrink-0">Tulis Ulasan</button>
-                                        <button className="text-[13px] font-semibold text-[#194e9e] hover:underline whitespace-nowrap">Lihat Semua</button>
-                                    </div>
+                                    <h3 className="text-[14px] md:text-[16px] font-black text-gray-900 tracking-tight uppercase">Ulasan Pengunjung</h3>
                                 </div>
 
-                                {/* Horizontal scrollable review cards – no rating bars */}
-                                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                                    {[
-                                        { name: "Rizky Pratama", initial: 'R', color: 'bg-red-100 text-red-600', date: "12 Mar 2026", stars: 5, review: "Fasilitas lengkap, AC dingin, dan pencahayaan lapangan oke banget. Recommended!", tag: "Futsal" },
-                                        { name: "Ayu Lestari", initial: 'A', color: 'bg-blue-100 text-blue-600', date: "8 Mar 2026", stars: 5, review: "Tempatnya bersih, staffnya ramah, dan booking-nya gampang banget lewat Kolektix. 10/10!", tag: "Padel" },
-                                        { name: "Hendra S.", initial: 'H', color: 'bg-green-100 text-green-600', date: "2 Mar 2026", stars: 5, review: "Lapangannya luas dan terawat. Harga terjangkau untuk kualitas sebagus ini. Pasti balik lagi!", tag: "Basket" },
-                                        { name: "Dita Rahayu", initial: 'D', color: 'bg-purple-100 text-purple-600', date: "28 Feb 2026", stars: 5, review: "Venue sangat profesional. Sistem booking online-nya mudah dan konfirmasi cepat banget!", tag: "Badminton" },
-                                        { name: "Fajar Nugroho", initial: 'F', color: 'bg-yellow-100 text-yellow-700', date: "24 Feb 2026", stars: 4, review: "Overall bagus, harga kompetitif. Parkiran luas dan aman. Cocok untuk latihan rutin!", tag: "Futsal" },
-                                        { name: "Sinta Dewi", initial: 'S', color: 'bg-pink-100 text-pink-600', date: "20 Feb 2026", stars: 5, review: "Lapangan terawat, ganti sepatu tersedia, dan kamar mandinya bersih. Sangat rekomended!", tag: "Tenis" },
-                                        { name: "Budi Santoso", initial: 'B', color: 'bg-teal-100 text-teal-600', date: "16 Feb 2026", stars: 5, review: "Staff sangat membantu dan fast response. Venue premium dengan harga yang worth it banget.", tag: "Padel" },
-                                        { name: "Mega Sari", initial: 'M', color: 'bg-indigo-100 text-indigo-600', date: "12 Feb 2026", stars: 4, review: "Pencahayaan lapangan sempurna, cocok untuk bermain malam hari. Akan kembali lagi!", tag: "Basket" },
-                                        { name: "Arif Wibowo", initial: 'A', color: 'bg-orange-100 text-orange-600', date: "9 Feb 2026", stars: 5, review: "Suasana venue enak dan nyaman. Akses transportasi mudah, dekat stasiun MRT juga.", tag: "Futsal" },
-                                        { name: "Lia Kusuma", initial: 'L', color: 'bg-cyan-100 text-cyan-600', date: "5 Feb 2026", stars: 5, review: "Booking via Kolektix sangat mudah. Venue selalu bersih dan terawat setiap berkunjung!", tag: "Badminton" },
-                                    ].map((rv, i) => (
-                                        <div key={i} className="bg-white rounded-[16px] p-4 border min-w-[280px] md:min-w-[320px] flex-shrink-0" style={{ borderColor: 'rgb(209,209,209)' }}>
-                                            <div className="flex items-start justify-between gap-2 mb-2">
-                                                <div className="flex items-center gap-2.5">
-                                                    <div className={`w-9 h-9 rounded-full ${rv.color} flex items-center justify-center font-black text-[13px] shrink-0`}>
-                                                        {rv.initial}
+                                <div className="bg-white rounded-[24px] p-5 md:p-8 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.08)] border border-[#e5e7eb]">
+                                    {/* Buttons shifted to left */}
+                                    <div className="flex items-center justify-start gap-2 md:gap-3 mb-5 md:mb-6">
+                                        <button onClick={() => setShowReviewModal(true)} className="px-3 py-1.5 bg-[#194e9e] text-white text-[9px] md:text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-[#123e80] shadow-sm transition-all whitespace-nowrap">Tulis Ulasan</button>
+                                        <button className="text-[11px] md:text-[12px] font-semibold text-[#194e9e] hover:underline whitespace-nowrap">Lihat Semua</button>
+                                    </div>
+
+                                    {/* Horizontal scrollable review cards – no rating bars */}
+                                    <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                                        {[
+                                            { name: "Rizky Pratama", initial: 'R', color: 'bg-red-100 text-red-600', date: "12 Mar 2026", stars: 5, review: "Fasilitas lengkap, AC dingin, dan pencahayaan lapangan oke banget. Recommended!", tag: "Futsal" },
+                                            { name: "Ayu Lestari", initial: 'A', color: 'bg-blue-100 text-blue-600', date: "8 Mar 2026", stars: 5, review: "Tempatnya bersih, staffnya ramah, dan booking-nya gampang banget lewat Kolektix. 10/10!", tag: "Padel" },
+                                            { name: "Hendra S.", initial: 'H', color: 'bg-green-100 text-green-600', date: "2 Mar 2026", stars: 5, review: "Lapangannya luas dan terawat. Harga terjangkau untuk kualitas sebagus ini. Pasti balik lagi!", tag: "Basket" },
+                                            { name: "Dita Rahayu", initial: 'D', color: 'bg-purple-100 text-purple-600', date: "28 Feb 2026", stars: 5, review: "Venue sangat profesional. Sistem booking online-nya mudah dan konfirmasi cepat banget!", tag: "Badminton" },
+                                            { name: "Fajar Nugroho", initial: 'F', color: 'bg-yellow-100 text-yellow-700', date: "24 Feb 2026", stars: 4, review: "Overall bagus, harga kompetitif. Parkiran luas dan aman. Cocok untuk latihan rutin!", tag: "Futsal" },
+                                            { name: "Sinta Dewi", initial: 'S', color: 'bg-pink-100 text-pink-600', date: "20 Feb 2026", stars: 5, review: "Lapangan terawat, ganti sepatu tersedia, dan kamar mandinya bersih. Sangat rekomended!", tag: "Tenis" },
+                                            { name: "Budi Santoso", initial: 'B', color: 'bg-teal-100 text-teal-600', date: "16 Feb 2026", stars: 5, review: "Staff sangat membantu dan fast response. Venue premium dengan harga yang worth it banget.", tag: "Padel" },
+                                            { name: "Mega Sari", initial: 'M', color: 'bg-indigo-100 text-indigo-600', date: "12 Feb 2026", stars: 4, review: "Pencahayaan lapangan sempurna, cocok untuk bermain malam hari. Akan kembali lagi!", tag: "Basket" },
+                                            { name: "Arif Wibowo", initial: 'A', color: 'bg-orange-100 text-orange-600', date: "9 Feb 2026", stars: 5, review: "Suasana venue enak dan nyaman. Akses transportasi mudah, dekat stasiun MRT juga.", tag: "Futsal" },
+                                            { name: "Lia Kusuma", initial: 'L', color: 'bg-cyan-100 text-cyan-600', date: "5 Feb 2026", stars: 5, review: "Booking via Kolektix sangat mudah. Venue selalu bersih dan terawat setiap berkunjung!", tag: "Badminton" },
+                                        ].map((rv, i) => (
+                                            <div key={i} className="bg-white rounded-[16px] p-4 border min-w-[280px] md:min-w-[320px] flex-shrink-0" style={{ borderColor: 'rgb(209,209,209)' }}>
+                                                <div className="flex items-start justify-between gap-2 mb-2">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className={`w-9 h-9 rounded-full ${rv.color} flex items-center justify-center font-black text-[13px] shrink-0`}>
+                                                            {rv.initial}
+                                                        </div>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <p className="text-[13px] font-bold text-gray-800 truncate">{rv.name}</p>
+                                                            <p className="text-[11px] text-gray-400 font-medium">{rv.date}</p>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex flex-col min-w-0">
-                                                        <p className="text-[13px] font-bold text-gray-800 truncate">{rv.name}</p>
-                                                        <p className="text-[11px] text-gray-400 font-medium">{rv.date}</p>
-                                                    </div>
+                                                    <span className="px-2 py-0.5 bg-blue-50 text-[#194e9e] text-[10px] font-bold rounded-md shrink-0 border border-blue-100">{rv.tag}</span>
                                                 </div>
-                                                <span className="px-2 py-0.5 bg-blue-50 text-[#194e9e] text-[10px] font-bold rounded-md shrink-0 border border-blue-100">{rv.tag}</span>
+                                                <div className="flex gap-0.5 mb-2">
+                                                    {[1, 2, 3, 4, 5].map(s => (
+                                                        <Icon key={s} icon={s <= rv.stars ? 'solar:star-bold' : 'solar:star-linear'} className={`text-[12px] ${s <= rv.stars ? 'text-yellow-400' : 'text-gray-200'}`} />
+                                                    ))}
+                                                </div>
+                                                <p className="text-[13px] text-gray-500 font-medium leading-relaxed line-clamp-3">
+                                                    {rv.review}
+                                                </p>
                                             </div>
-                                            <div className="flex gap-0.5 mb-2">
-                                                {[1, 2, 3, 4, 5].map(s => (
-                                                    <Icon key={s} icon={s <= rv.stars ? 'solar:star-bold' : 'solar:star-linear'} className={`text-[12px] ${s <= rv.stars ? 'text-yellow-400' : 'text-gray-200'}`} />
-                                                ))}
-                                            </div>
-                                            <p className="text-[13px] text-gray-500 font-medium leading-relaxed line-clamp-3">
-                                                {rv.review}
-                                            </p>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -657,12 +657,12 @@ const VenueDetail = () => {
                 {/* ── LOKASI & PEMANDU ARAH SECTION ── */}
                 <div className="max-w-6xl mx-auto px-4 md:px-0">
                     <div ref={sectionRefs.lokasi} className="pb-0 pt-6">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#194e9e] text-white shrink-0">
-                                <Icon icon="solar:map-point-bold" className="text-white text-[16px]" />
+                        <div className="flex items-center gap-2.5 mb-4 md:mb-5">
+                            <div className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 rounded-full bg-[#194e9e] text-white shrink-0">
+                                <Icon icon="solar:map-point-bold" className="text-white text-[13px] md:text-[14px]" />
                             </div>
                             <div>
-                                <h6 className="text-[20px] font-black text-gray-900 tracking-tight">Lokasi &amp; Pemandu Arah</h6>
+                                <h6 className="text-[15px] md:text-[17px] font-black text-gray-900 tracking-tight">Lokasi & Pemandu Arah</h6>
                             </div>
                         </div>
 
@@ -727,12 +727,12 @@ const VenueDetail = () => {
                 {/* ── PERTANYAAN UMUM SECTION ── */}
                 <div className="max-w-6xl mx-auto px-4 md:px-0">
                     <div className="pb-36 pt-10">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-[#194e9e] text-white shrink-0">
-                                <Icon icon="solar:chat-square-bold" className="text-white text-[16px]" />
+                        <div className="flex items-center gap-2.5 mb-4 md:mb-5">
+                            <div className="flex items-center justify-center w-7 h-7 md:w-8 md:h-8 rounded-full bg-[#194e9e] text-white shrink-0">
+                                <Icon icon="solar:chat-square-bold" className="text-white text-[13px] md:text-[14px]" />
                             </div>
                             <div>
-                                <h6 className="text-[20px] font-black text-gray-900 tracking-tight">Pertanyaan Umum</h6>
+                                <h6 className="text-[15px] md:text-[17px] font-black text-gray-900 tracking-tight">Pertanyaan Umum</h6>
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -883,12 +883,16 @@ const VenueDetail = () => {
                 opened={showDetailModal}
                 onClose={() => setShowDetailModal(false)}
                 title={<Text fw={900} className="uppercase tracking-[0.1em] text-primary-base">Detail & Aturan Venue</Text>}
-                centered
-                size="700px"
-                radius="24px"
+                radius={isMobile ? 0 : 16}
+                fullScreen={isMobile}
+                withCloseButton
+                closeButtonProps={{ iconSize: 24, className: "text-gray-900 hover:bg-gray-100" }}
                 styles={{
-                    content: { overflow: 'hidden' },
-                    body: { padding: '24px' }
+                    inner: isMobile ? { padding: '0 !important' } : undefined,
+                    content: { boxShadow: isMobile ? 'none' : '0 10px 40px -10px rgba(0, 0, 0, 0.2)', overflow: 'hidden' },
+                    header: { padding: '24px 24px 16px 24px' },
+                    title: { width: '100%' },
+                    body: { padding: '0px 24px 32px 24px' }
                 }}
             >
                 <div className="flex flex-col gap-6">
