@@ -146,14 +146,14 @@ const Venue = () => {
     }
 
     if (selectedCities.length > 0 && !selectedCities.includes('Semua')) {
-      filtered = filtered.filter((item) => 
+      filtered = filtered.filter((item) =>
         selectedCities.some(city => item.location_name?.toLowerCase().includes(city.toLowerCase()))
       );
     }
 
     if (selectedSports.length > 0 && !selectedSports.includes('Semua')) {
-      filtered = filtered.filter((item) => 
-        selectedSports.some(sport => 
+      filtered = filtered.filter((item) =>
+        selectedSports.some(sport =>
           item.has_venue_category?.name === 'Olahraga' ||
           item.name.toLowerCase().includes(sport.toLowerCase())
         )
@@ -188,9 +188,9 @@ const Venue = () => {
 
   return (
     <Container mih="90vh" mt={{ base: 10, md: 60 }} size="xl" className="px-4 md:px-8 pb-10">
-      <Stack gap={{ base: 16, md: 30 }}>
+      <Stack className="gap-4 md:gap-8">
 
-        <Stack gap={{ base: 12, md: 16 }}>
+        <Stack className="gap-3 md:gap-4">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mt-0 md:mt-12 relative z-20">
             <Stack gap={1}>
               <Title size="h2" fw={800} className="text-gray-900 tracking-tight text-xl md:text-3xl">Pilihan Kategori</Title>
@@ -199,36 +199,36 @@ const Venue = () => {
           </div>
 
           <Flex align="center" gap={16} className={`overflow-x-auto pb-4 scrollbar-hide px-1`}>
-          {[
-            { name: 'Semua', icon_menu: 'solar:widget-3-bold-duotone' },
-            { name: 'Olahraga', icon_menu: 'solar:football-bold-duotone' },
-            { name: 'Convention Hall', icon_menu: 'solar:buildings-bold-duotone' },
-            { name: 'Meeting Room', icon_menu: 'solar:presentation-graph-bold-duotone' },
-            { name: 'Auditorium', icon_menu: 'solar:mask-hapai-bold-duotone' },
-            { name: 'Hall', icon_menu: 'solar:home-2-bold-duotone' },
-          ].map((item, index) => (
-            <button
-              key={index}
-              onClick={() => setSelectedCategory(item.name as string)}
-              className={`
+            {[
+              { name: 'Semua', icon_menu: 'solar:widget-3-bold-duotone' },
+              { name: 'Olahraga', icon_menu: 'solar:football-bold-duotone' },
+              { name: 'Convention Hall', icon_menu: 'solar:buildings-bold-duotone' },
+              { name: 'Meeting Room', icon_menu: 'solar:presentation-graph-bold-duotone' },
+              { name: 'Auditorium', icon_menu: 'solar:mask-hapai-bold-duotone' },
+              { name: 'Hall', icon_menu: 'solar:home-2-bold-duotone' },
+            ].map((item, index) => (
+              <button
+                key={index}
+                onClick={() => setSelectedCategory(item.name as string)}
+                className={`
                 flex items-center justify-center gap-2.5 px-4 py-2.5 md:px-6 md:py-3.5 rounded-full transition-all duration-300 min-w-max outline-none
                 ${item.name === selectedCategory
-                  ? 'bg-[#194e9e] text-white shadow-[0_10px_20px_-5px_rgba(25,78,158,0.4)]'
-                  : 'bg-white text-gray-800 hover:bg-slate-50 font-bold border border-transparent'
-                }
+                    ? 'bg-[#194e9e] text-white shadow-[0_10px_20px_-5px_rgba(25,78,158,0.4)]'
+                    : 'bg-white text-gray-800 hover:bg-slate-50 font-bold border border-transparent'
+                  }
               `}
-            >
-              <Icon 
-                icon={item.icon_menu ?? ''} 
-                className={`text-[18px] md:text-[20px] ${item.name === selectedCategory ? 'text-white' : 'text-gray-900'}`} 
-              />
-              <span className={`text-[12px] md:text-[13px] tracking-wide ${item.name === selectedCategory ? 'font-bold' : 'font-bold'}`}>
-                {item.name}
-              </span>
-            </button>
-          ))}
-        </Flex>
-      </Stack>
+              >
+                <Icon
+                  icon={item.icon_menu ?? ''}
+                  className={`text-[18px] md:text-[20px] ${item.name === selectedCategory ? 'text-white' : 'text-gray-900'}`}
+                />
+                <span className={`text-[12px] md:text-[13px] tracking-wide ${item.name === selectedCategory ? 'font-bold' : 'font-bold'}`}>
+                  {item.name}
+                </span>
+              </button>
+            ))}
+          </Flex>
+        </Stack>
 
         {data.length > 0 ? (
           <SimpleGrid className={`!grid-cols-2 sm:!grid-cols-3 md:!grid-cols-4`} spacing={{ base: 'xs', md: 'lg' }} verticalSpacing={{ base: 'md', md: 'xl' }}>
