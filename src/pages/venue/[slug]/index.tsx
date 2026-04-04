@@ -940,19 +940,29 @@ const VenueDetail = () => {
             <Modal
                 opened={showDetailModal}
                 onClose={() => setShowDetailModal(false)}
-                title={<Text fw={700} className="text-[20px] text-gray-900 tracking-tight">Tentang Venue</Text>}
+                title={
+                    <Text fw={900} className="text-[15px] md:text-[20px] text-gray-900 leading-tight uppercase tracking-tight">
+                        DETAIL & ATURAN <br /> VENUE
+                    </Text>
+                }
                 centered
-                size="600px"
+                size="100%"
                 radius={isMobile ? 0 : 16}
                 fullScreen={isMobile}
                 withCloseButton
                 closeButtonProps={{ iconSize: 24, className: "text-gray-900 hover:bg-gray-100" }}
                 styles={{
-                    inner: isMobile ? { padding: '0 !important' } : undefined,
-                    content: { boxShadow: isMobile ? 'none' : '0 10px 40px -10px rgba(0, 0, 0, 0.2)' },
-                    header: { padding: '24px 24px 16px 24px' },
+                    inner: { padding: isMobile ? '0 !important' : '20px !important' },
+                    content: { 
+                        boxShadow: isMobile ? 'none' : '0 10px 40px -10px rgba(0, 0, 0, 0.2)',
+                        maxWidth: isMobile ? '100% !important' : '650px !important',
+                        width: '100% !important',
+                        height: isMobile ? '100% !important' : 'auto',
+                        margin: '0 auto',
+                    },
+                    header: { padding: isMobile ? '20px 16px 12px 16px' : '24px 24px 16px 24px' },
                     title: { width: '100%' },
-                    body: { padding: '0px 24px 32px 24px' }
+                    body: { padding: isMobile ? '0px 16px 32px 16px' : '0px 24px 32px 24px' }
                 }}
             >
                 <div className={`flex flex-col gap-6 overflow-y-auto stylish-scrollbar pr-2 mt-2 ${isMobile ? 'flex-1 h-full' : 'max-h-[75vh]'}`}>

@@ -187,71 +187,48 @@ const Venue = () => {
   }, [_data, selectedCategory, selectedCities, selectedSports, selectedPrice, searchQuery, sortBy]);
 
   return (
-    <Container mih="90vh" mt={{ base: 40, md: 60 }} size="xl" className="px-4 md:px-8 pb-10">
-      <Stack gap={30}>
+    <Container mih="90vh" mt={{ base: 10, md: 60 }} size="xl" className="px-4 md:px-8 pb-10">
+      <Stack gap={{ base: 16, md: 30 }}>
 
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mt-6 md:mt-12 relative z-20">
-          <Stack gap={6}>
-            {/* <Title size="h2" fw={800} className="text-gray-900 tracking-tight text-2xl md:text-3xl">Pilihan Kategori</Title>
-            <Text size="md" c="dimmed" fw={500}>Temukan ruang acara, meeting room, olahraga, dan lainnya.</Text> */}
-          </Stack>
+        <Stack gap={{ base: 12, md: 16 }}>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mt-0 md:mt-12 relative z-20">
+            <Stack gap={1}>
+              <Title size="h2" fw={800} className="text-gray-900 tracking-tight text-xl md:text-3xl">Pilihan Kategori</Title>
+              <Text size="sm" c="dimmed" fw={500} className="md:text-md">Temukan ruang acara, meeting room, olahraga, dan lainnya.</Text>
+            </Stack>
+          </div>
 
-          {/* Filtering & Sorting - Moved to FilterMenu */}
-          {/* <div className="flex items-center w-full md:w-auto gap-3 shrink-0">
-            <div className="flex items-center gap-2 bg-white px-5 py-3.5 rounded-2xl hover:bg-slate-50 transition-all w-full md:w-auto shadow-sm border border-gray-100">
-              <Icon icon="solar:sort-from-top-to-bottom-line-duotone" className="text-primary-base text-[20px] shrink-0" />
-              <select
-                className="bg-transparent border-none outline-none text-[13px] font-bold text-gray-700 w-full md:w-[130px] cursor-pointer appearance-none"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="Rekomendasi">Rekomendasi</option>
-                <option value="Harga Terendah">Harga Terendah</option>
-                <option value="Harga Tertinggi">Harga Tertinggi</option>
-              </select>
-              <Icon icon="solar:alt-arrow-down-bold" className="text-gray-400 text-[12px] shrink-0 ml-1" />
-            </div>
-
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center justify-center gap-2 h-[52px] px-6 rounded-2xl font-black uppercase tracking-wider transition-all text-[12px] shrink-0
-                ${showFilters
-                  ? 'bg-black text-white shadow-xl shadow-black/25 ring-4 ring-black/5'
-                  : 'bg-[#194e9e] text-white shadow-lg shadow-[#194e9e]/20 hover:bg-[#123e80]'
-                }`}
-            >
-              <Icon icon={showFilters ? "solar:close-circle-bold" : "solar:filter-bold-duotone"} className="text-[18px]" />
-              <span>{showFilters ? 'Tutup' : 'Filter Lanjut'}</span>
-            </button>
-          </div> */}
-        </div>
-
-        {/* Expanded Filters Panel Removed - Now integrated in FilterMenu */}
-        <div className="mt-2" />
-
-        {/* <Flex align="center" gap={16} className={`overflow-x-auto pb-6 scrollbar-hide px-1`}>
-          {[{ name: 'Semua', icon_menu: 'solar:widget-3-bold-duotone' }, ...Array.from(new Set(_data.map(item => item.has_venue_category?.name))).filter(Boolean).map(name => {
-            const item = _data.find(e => e.has_venue_category?.name === name);
-            return { name, icon_menu: item?.has_venue_category?.icon_menu }
-          })].map((item, index) => (
+          <Flex align="center" gap={16} className={`overflow-x-auto pb-4 scrollbar-hide px-1`}>
+          {[
+            { name: 'Semua', icon_menu: 'solar:widget-3-bold-duotone' },
+            { name: 'Olahraga', icon_menu: 'solar:football-bold-duotone' },
+            { name: 'Convention Hall', icon_menu: 'solar:buildings-bold-duotone' },
+            { name: 'Meeting Room', icon_menu: 'solar:presentation-graph-bold-duotone' },
+            { name: 'Auditorium', icon_menu: 'solar:mask-hapai-bold-duotone' },
+            { name: 'Hall', icon_menu: 'solar:home-2-bold-duotone' },
+          ].map((item, index) => (
             <button
               key={index}
               onClick={() => setSelectedCategory(item.name as string)}
               className={`
-                flex items-center justify-center gap-2.5 px-6 py-3 rounded-full transition-all duration-500 min-w-max outline-none
+                flex items-center justify-center gap-2.5 px-4 py-2.5 md:px-6 md:py-3.5 rounded-full transition-all duration-300 min-w-max outline-none
                 ${item.name === selectedCategory
-                  ? 'bg-primary-base text-white shadow-[0_10px_25px_-5px_rgba(25,78,158,0.4)] scale-105'
-                  : 'bg-white text-gray-600 hover:bg-slate-50 hover:shadow-md'
+                  ? 'bg-[#194e9e] text-white shadow-[0_10px_20px_-5px_rgba(25,78,158,0.4)]'
+                  : 'bg-white text-gray-800 hover:bg-slate-50 font-bold border border-transparent'
                 }
               `}
             >
-              <Icon icon={item.icon_menu ?? ''} className={`text-[20px] ${item.name === selectedCategory ? 'scale-110 drop-shadow-md' : 'text-gray-400'}`} />
-              <span className={`text-sm tracking-wide ${item.name === selectedCategory ? 'font-bold' : 'font-semibold'}`}>
+              <Icon 
+                icon={item.icon_menu ?? ''} 
+                className={`text-[18px] md:text-[20px] ${item.name === selectedCategory ? 'text-white' : 'text-gray-900'}`} 
+              />
+              <span className={`text-[12px] md:text-[13px] tracking-wide ${item.name === selectedCategory ? 'font-bold' : 'font-bold'}`}>
                 {item.name}
               </span>
             </button>
           ))}
-        </Flex> */}
+        </Flex>
+      </Stack>
 
         {data.length > 0 ? (
           <SimpleGrid className={`!grid-cols-2 sm:!grid-cols-3 md:!grid-cols-4`} spacing={{ base: 'xs', md: 'lg' }} verticalSpacing={{ base: 'md', md: 'xl' }}>
